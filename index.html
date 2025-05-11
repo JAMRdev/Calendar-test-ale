@@ -209,6 +209,10 @@
                     <h2 id="currentMonthYear" class="text-xl sm:text-2xl md:text-3xl font-semibold text-slate-700 order-first sm:order-none mb-2 sm:mb-0"></h2>
                     <button id="nextMonthBtn" class="btn btn-primary w-full sm:w-auto text-xs sm:text-sm">Mes Siguiente &gt;</button>
                 </div>
+                <div class="flex flex-col sm:flex-row justify-center gap-2 mb-3">
+                    <button id="selectAllVisibleBtn" class="btn btn-info text-xs px-3 py-1.5 w-full sm:w-auto">Seleccionar Visibles Futuros</button>
+                    <button id="deselectAllBtn" class="btn btn-secondary text-xs px-3 py-1.5 w-full sm:w-auto">Deseleccionar Todos</button>
+                </div>
                 <div id="calendarGrid" class="grid grid-cols-7 gap-1 sm:gap-1.5 bg-white p-2 sm:p-3 rounded-xl shadow-xl">
                     </div>
                  <p class="mt-2 sm:mt-3 text-xs text-slate-500 text-center">Usa Shift+Click para rango, Ctrl/Cmd+Click o Tap para múltiple.</p>
@@ -303,6 +307,8 @@
         const currentMonthYearEl = document.getElementById('currentMonthYear');
         const prevMonthBtn = document.getElementById('prevMonthBtn');
         const nextMonthBtn = document.getElementById('nextMonthBtn');
+        const selectAllVisibleBtn = document.getElementById('selectAllVisibleBtn');
+        const deselectAllBtn = document.getElementById('deselectAllBtn');
         const sidePanelTitle = document.getElementById('sidePanelTitle');
         const sidePanelContent = document.getElementById('sidePanelContent');
         const weeklyWorkingHoursPanelEl = document.getElementById('weeklyWorkingHoursPanel');
@@ -702,7 +708,7 @@
             let formMessage = "";
             if (dayIsPastOrToday) {
                 formMessage = `<p class="text-xs text-amber-600 bg-amber-100 p-2 rounded-md mb-3">No se puede generar disponibilidad para días pasados o el actual.</p>`;
-            } else if (!weeklySetting.active && !eventData?.daySettings) { // If not active weekly AND no custom day settings yet
+            } else if (!weeklySetting.active && !eventData?.daySettings) { 
                 formMessage = `<p class="text-xs text-amber-600 bg-amber-100 p-2 rounded-md mb-3">Este día no es laborable según el horario semanal. Actívalo en "Horario Laboral Semanal" o define un horario personalizado abajo.</p>`;
             }
             
@@ -721,7 +727,7 @@
                 } else if (!canGenerateSlots) {
                     // Message handled by formMessage
                 }
-                 else { // Not a weekly working day, but can still set custom hours
+                 else { 
                     contentHTML += `<p class="text-slate-500 my-3 sm:my-4 text-sm italic">Define un horario personalizado y slots para este día.</p>`;
                 }
             }
@@ -771,7 +777,7 @@
         function renderMultiDayPanel() {
             const firstSelectedDate = appData.selectedDates[0];
             const firstDayEvent = appData.events[firstSelectedDate];
-            const interviewType = firstDayEvent?.slots?.[0]?.interviewType; // Use first day's type as default
+            const interviewType = firstDayEvent?.slots?.[0]?.interviewType; 
             const dayOfWeek = new Date(firstSelectedDate + 'T00:00:00Z').getDay();
             const weeklySetting = appData.workingHours[dayOfWeek];
 
@@ -822,7 +828,6 @@
         }
 
         function getAvailabilityFormHTML(dateStr, eventData, isMultiDay = false, disableGenerateButton = false) {
-            // For single day, eventData.daySettings might exist. For multi-day, it's usually null for the form.
             const defaultDuration = eventData?.daySettings?.slotDurationMinutes || "30"; 
             const defaultInterviewType = eventData?.daySettings?.interviewType || "virtual";
 
@@ -1007,6 +1012,36 @@
             updateSidePanel(); 
         });
 
+        selectAllVisibleBtn.addEventListener('click', () => {
+            const year = appData.currentDate.getFullYear();
+            const month = appData.currentDate.getMonth();
+            const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+            const newSelectedDates = [];
+
+            for (let day = 1; day <= lastDayOfMonth; day++) {
+                const dateStr = formatDate(new Date(year, month, day));
+                if (!isDateTodayOrPast(dateStr)) {
+                    newSelectedDates.push(dateStr);
+                }
+            }
+            appData.selectedDates = [...new Set([...appData.selectedDates, ...newSelectedDates])]; // Merge without duplicates
+            if (appData.selectedDates.length > 0) {
+                appData.lastSelectedDate = appData.selectedDates[appData.selectedDates.length - 1];
+            }
+            addLog("Selección Múltiple", "Todos los días visibles futuros seleccionados.");
+            renderCalendar();
+            updateSidePanel();
+        });
+
+        deselectAllBtn.addEventListener('click', () => {
+            appData.selectedDates = [];
+            appData.lastSelectedDate = null;
+            addLog("Selección Múltiple", "Todos los días deseleccionados.");
+            renderCalendar();
+            updateSidePanel();
+        });
+
+
         function saveAvailabilityFromPanel(datesToProcess) {
             if (datesToProcess.length === 0) {
                 showNotification("No hay días seleccionados para generar horarios.", "warning");
@@ -1044,35 +1079,38 @@
                 const dayOfWeek = new Date(dateStr + 'T00:00:00Z').getDay();
                 const weeklySetting = appData.workingHours[dayOfWeek];
 
+                // **CRUCIAL FIX**: If weekly day is not active, skip this day entirely, UNLESS valid custom hours are provided.
+                if (!weeklySetting.active && (!customDayStart || !customDayEnd || parseTime(customDayStart) >= parseTime(customDayEnd))) {
+                     addLog("Generación de Slots Omitida", `Día ${dateStr} no es laborable (semanal) y no se proveyó horario custom válido.`);
+                     if (appData.events[dateStr] && appData.events[dateStr].type === 'slots') { delete appData.events[dateStr]; } // Clear if it had slots
+                     return; // Skip this day
+                }
+
                 let dayStartToUse = customDayStart;
                 let dayEndToUse = customDayEnd;
 
-                // If custom times are not valid or not provided by form (e.g. during multi-day where it defaults to first day's weekly)
-                // then fall back to weekly settings IF that day is active.
-                if (!dayStartToUse || !dayEndToUse || parseTime(dayStartToUse) >= parseTime(dayEndToUse)) {
+                // If custom times are invalid or not provided, fall back to weekly settings (only if weekly is active)
+                if (!customDayStart || !customDayEnd || parseTime(customDayStart) >= parseTime(customDayEnd)) {
                     if (weeklySetting && weeklySetting.active) {
                         dayStartToUse = weeklySetting.startTime;
                         dayEndToUse = weeklySetting.endTime;
                     } else {
-                        // If weekly is also not active, and custom times are invalid/not set, skip this day.
-                        addLog("Generación de Slots Omitida", `Día ${dateStr} no es laborable (semanal) y no se proveyó horario custom válido.`);
-                        return;
+                        // This case should now be caught by the CRUCIAL FIX above if weekly is inactive
+                        // If weekly is active but custom times were bad, this is the fallback.
+                        // If weekly is inactive and custom times were bad, it's already returned.
+                        if (!weeklySetting.active) { // Should not be reached if CRUCIAL FIX is effective
+                             addLog("Lógica Inesperada", `Día ${dateStr} con weekly inactive pero no retornado antes.`);
+                             return;
+                        }
+                        dayStartToUse = weeklySetting.startTime;
+                        dayEndToUse = weeklySetting.endTime;
                     }
                 }
                 
-                // Final check: if day is marked inactive in weekly schedule, do not generate slots,
-                // UNLESS custom times were provided AND are valid.
-                // This allows overriding an inactive weekly day with specific custom hours.
-                if (!weeklySetting.active && (!customDayStart || !customDayEnd || parseTime(customDayStart) >= parseTime(customDayEnd))) {
-                     addLog("Generación de Slots Omitida", `Día ${dateStr} no es laborable (semanal) y no se proveyó horario custom válido para anular.`);
-                     return;
-                }
-
-
                 const startTimeInMinutes = parseTime(dayStartToUse);
                 const endTimeInMinutes = parseTime(dayEndToUse);
 
-                if (startTimeInMinutes >= endTimeInMinutes) { // This check might be redundant if handled above
+                if (startTimeInMinutes >= endTimeInMinutes) { 
                     addLog("Error en Horario", `Para ${dateStr}, inicio (${dayStartToUse}) no es anterior a fin (${dayEndToUse}).`);
                     return; 
                 }
@@ -1100,7 +1138,7 @@
                 appData.events[dateStr] = { type: 'slots', slots: slots, daySettings: { dayStartTime: dayStartToUse, dayEndTime: dayEndToUse, slotDurationMinutes: duration, interviewType: type }};
             });
             
-            let logDetails = `Tipo: ${type}, Duración: ${duration}m. Para día(s): ${validDatesToProcess.join(', ')}. Horario custom usado: ${customDayStart}-${customDayEnd}`;
+            let logDetails = `Tipo: ${type}, Duración: ${duration}m. Para día(s): ${validDatesToProcess.join(', ')}. Horario custom usado si provisto: ${customDayStart}-${customDayEnd}`;
             addLog("Disponibilidad (Slots) Guardada", logDetails);
 
             if (daysProcessedCount > 0) {
