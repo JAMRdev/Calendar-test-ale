@@ -290,13 +290,13 @@
                 { id: 'gnp_lunch', start: "12:00", end: "13:00", title: "Almuerzo (Global)" }
             ],
             workingHours: { 
-                0: { active: false, startTime: "09:00", endTime: "17:00" }, 
-                1: { active: true, startTime: "09:00", endTime: "17:00" },  
-                2: { active: true, startTime: "09:00", endTime: "17:00" },  
-                3: { active: true, startTime: "09:00", endTime: "17:00" },  
-                4: { active: true, startTime: "09:00", endTime: "17:00" },  
-                5: { active: true, startTime: "09:00", endTime: "17:00" },  
-                6: { active: false, startTime: "09:00", endTime: "17:00" }  
+                0: { active: false, startTime: "09:00", endTime: "17:00" }, // Domingo
+                1: { active: true, startTime: "09:00", endTime: "17:00" },  // Lunes
+                2: { active: true, startTime: "09:00", endTime: "17:00" },  // Martes
+                3: { active: true, startTime: "09:00", endTime: "17:00" },  // Miércoles
+                4: { active: true, startTime: "09:00", endTime: "17:00" },  // Jueves
+                5: { active: true, startTime: "09:00", endTime: "17:00" },  // Viernes
+                6: { active: false, startTime: "09:00", endTime: "17:00" }  // Sábado
             },
             copiedDayData: null,
             logs: [] 
@@ -371,21 +371,30 @@
 
 
         // --- UTILITY FUNCTIONS ---
-        function formatDate(date) {
-            const d = new Date(date);
+        function formatDate(date) { // date is a Date object
+            const d = new Date(date); // Ensure it's a new Date object to avoid modifying the original
             let month = '' + (d.getMonth() + 1);
             let day = '' + d.getDate();
             const year = d.getFullYear();
             if (month.length < 2) month = '0' + month;
             if (day.length < 2) day = '0' + day;
-            return [year, month, day].join('-');
+            return [year, month, day].join('-'); // Returns YYYY-MM-DD
         }
         
-        function isDateTodayOrPast(dateStr) {
+        function isDateTodayOrPast(dateStr) { // dateStr is YYYY-MM-DD
             const today = new Date();
             today.setHours(0, 0, 0, 0); 
-            const compareDate = new Date(dateStr + 'T00:00:00Z'); 
+            
+            const [year, month, day] = dateStr.split('-').map(Number);
+            const compareDate = new Date(year, month - 1, day); // Creates date in local timezone
+            compareDate.setHours(0,0,0,0); // Ensure it's at the beginning of the day for accurate comparison
             return compareDate <= today;
+        }
+
+        // Helper to get a local Date object from YYYY-MM-DD string
+        function getLocalDateFromStr(dateStr) {
+            const [year, month, day] = dateStr.split('-').map(Number);
+            return new Date(year, month - 1, day);
         }
 
 
@@ -422,13 +431,13 @@
             });
 
             const year = appData.currentDate.getFullYear();
-            const month = appData.currentDate.getMonth();
+            const month = appData.currentDate.getMonth(); // 0-indexed
             currentMonthYearEl.textContent = `${appData.currentDate.toLocaleString('es-ES', { month: 'long' })} ${year}`;
 
             const firstDayOfMonth = new Date(year, month, 1);
             const lastDayOfMonth = new Date(year, month + 1, 0);
             const daysInMonth = lastDayOfMonth.getDate();
-            const startingDay = firstDayOfMonth.getDay();
+            const startingDay = firstDayOfMonth.getDay(); // 0 for Sunday, 1 for Monday...
 
             for (let i = 0; i < startingDay; i++) {
                 calendarGrid.appendChild(document.createElement('div')).className = 'border border-slate-200 bg-slate-50 rounded-md';
@@ -436,7 +445,9 @@
 
             for (let day = 1; day <= daysInMonth; day++) {
                 const dayCell = document.createElement('div');
-                const dateStr = formatDate(new Date(year, month, day));
+                const currentDateObj = new Date(year, month, day); // Local date object for this day
+                const dateStr = formatDate(currentDateObj); // YYYY-MM-DD string
+                
                 dayCell.className = 'calendar-day border border-slate-200 p-1.5 sm:p-2 cursor-pointer flex flex-col items-center justify-start relative text-xs rounded-md';
                 
                 if (isDateTodayOrPast(dateStr)) {
@@ -444,7 +455,7 @@
                     dayCell.title = "No se puede generar disponibilidad para días pasados o el actual.";
                 } else {
                      if (formatDate(new Date()) === dateStr && !appData.selectedDates.includes(dateStr) && (!appData.events[dateStr] || appData.events[dateStr].type !== 'day-off')) {
-                        dayCell.classList.add('bg-indigo-50');
+                        dayCell.classList.add('bg-indigo-50'); // Highlight today if not selected and not a day-off
                     }
                 }
 
@@ -470,9 +481,9 @@
                         const availableSlots = appData.events[dateStr].slots.filter(s => s.status === 'available').length;
                         if (availableSlots > 0) {
                              const availableText = document.createElement('span');
-                             availableText.className = 'text-xxs sm:text-xs text-green-600 block';
-                             availableText.textContent = `${availableSlots} disp.`;
-                             eventInfoContainer.appendChild(availableText);
+                            availableText.className = 'text-xxs sm:text-xs text-green-600 block';
+                            availableText.textContent = `${availableSlots} disp.`;
+                            eventInfoContainer.appendChild(availableText);
                         } else if (appData.events[dateStr].slots.length > 0) { 
                             const configuredIndicator = document.createElement('span');
                             configuredIndicator.className = 'text-xxs sm:text-xs text-slate-500 block';
@@ -503,9 +514,8 @@
                 sidePanelContent.innerHTML = `<p class="text-slate-500 text-sm">Selecciona un día (o varios) en el calendario para ver sus opciones.</p>`;
             } else if (appData.selectedDates.length === 1) {
                 const dateStr = appData.selectedDates[0];
-                const [year, month, day] = dateStr.split('-').map(Number);
-                const dateObj = new Date(year, month - 1, day); // Correctly create local date
-                sidePanelTitle.textContent = `Día: ${dateObj.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
+                const localDate = getLocalDateFromStr(dateStr);
+                sidePanelTitle.textContent = `Día: ${localDate.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
                 renderSingleDayPanel(dateStr);
             } else {
                 sidePanelTitle.textContent = `${appData.selectedDates.length} días seleccionados`;
@@ -534,7 +544,7 @@
                 const dayLabel = document.createElement('span');
                 dayLabel.textContent = dayName.substring(0,3) + "."; 
                 dayLabel.className = 'day-label text-xs text-slate-700';
-                                
+                                        
                 const startTimeSelect = document.createElement('select');
                 startTimeSelect.dataset.dayIndex = index;
                 startTimeSelect.dataset.type = 'start';
@@ -701,7 +711,8 @@
             const eventData = appData.events[dateStr];
             const dayIsPastOrToday = isDateTodayOrPast(dateStr);
             let canGenerateSlots = !dayIsPastOrToday;
-            const dayOfWeek = new Date(dateStr + 'T00:00:00Z').getDay(); 
+            const localDate = getLocalDateFromStr(dateStr);
+            const dayOfWeek = localDate.getDay(); 
             const weeklySetting = appData.workingHours[dayOfWeek];
 
             let formMessage = "";
@@ -776,8 +787,9 @@
         function renderMultiDayPanel() {
             const firstSelectedDate = appData.selectedDates[0];
             const firstDayEvent = appData.events[firstSelectedDate];
-            const interviewType = firstDayEvent?.slots?.[0]?.interviewType; 
-            const dayOfWeek = new Date(firstSelectedDate + 'T00:00:00Z').getDay(); 
+            // const interviewType = firstDayEvent?.slots?.[0]?.interviewType; // Not directly used for default form values here
+            const localDate = getLocalDateFromStr(firstSelectedDate);
+            const dayOfWeek = localDate.getDay(); 
             const weeklySetting = appData.workingHours[dayOfWeek];
 
 
@@ -878,7 +890,8 @@
                 eventData.slots.forEach(slot => displayItems.push({...slot, itemType: 'slot', status: 'available'})); 
             }
 
-            const dayOfWeek = new Date(dateStr + 'T00:00:00Z').getDay();
+            const localDate = getLocalDateFromStr(dateStr);
+            const dayOfWeek = localDate.getDay();
             const weeklyDaySetting = appData.workingHours[dayOfWeek];
             const daySpecificSetting = eventData?.daySettings; 
 
@@ -951,10 +964,11 @@
 
             if (isShiftPressed && appData.lastSelectedDate && appData.lastSelectedDate !== dateStr) {
                 appData.selectedDates = []; // Start fresh for range selection
-                const d1 = new Date(appData.lastSelectedDate + 'T00:00:00Z'); 
-                const d2 = new Date(dateStr + 'T00:00:00Z');          
-                const start = d1 < d2 ? d1 : d2;
-                const end = d1 < d2 ? d2 : d1;
+                const d1LocalDate = getLocalDateFromStr(appData.lastSelectedDate);
+                const d2LocalDate = getLocalDateFromStr(dateStr);
+                
+                const start = d1LocalDate < d2LocalDate ? d1LocalDate : d2LocalDate;
+                const end = d1LocalDate < d2LocalDate ? d2LocalDate : d1LocalDate;
 
                 for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
                     appData.selectedDates.push(formatDate(d));
@@ -1066,8 +1080,9 @@ function saveAvailabilityFromPanel(datesToProcess) {
             if (appData.events[dateStr] && appData.events[dateStr].type === 'slots') { delete appData.events[dateStr]; }
             return; // Como 'continue' en forEach
         }
-
-        const dayOfWeek = new Date(dateStr + 'T00:00:00Z').getDay();
+        
+        const localDate = getLocalDateFromStr(dateStr); // Use local date for dayOfWeek
+        const dayOfWeek = localDate.getDay();
         const weeklySetting = appData.workingHours[dayOfWeek];
 
         let dayStartToUse, dayEndToUse;
@@ -1227,8 +1242,7 @@ function saveAvailabilityFromPanel(datesToProcess) {
             }
             appData.copiedDayData = JSON.parse(JSON.stringify(appData.events[sourceDateStr]));
             addLog("Disponibilidad de Día Copiada", `Desde: ${sourceDateStr} (Tipo: ${appData.copiedDayData.daySettings.interviewType}, Dur: ${appData.copiedDayData.daySettings.slotDurationMinutes}m)`);
-             const [year, month, day] = sourceDateStr.split('-').map(Number);
-            const dateObj = new Date(year, month - 1, day);
+             const dateObj = getLocalDateFromStr(sourceDateStr);
             showNotification(`Disponibilidad de ${dateObj.toLocaleDateString('es-ES', {month:'short', day:'numeric'})} copiada.`, "success");
             updateSidePanel(); 
         }
@@ -1243,7 +1257,8 @@ function saveAvailabilityFromPanel(datesToProcess) {
                 if (isDateTodayOrPast(dateStr)) {
                     addLog("Pegado Omitido (Fecha Inválida)", `Día ${dateStr} es hoy o pasado.`);
                 } else {
-                     const dayOfWeek = new Date(dateStr + 'T00:00:00Z').getDay();
+                     const localDate = getLocalDateFromStr(dateStr);
+                     const dayOfWeek = localDate.getDay();
                      if (appData.workingHours[dayOfWeek].active) { // Only paste to days that are active in weekly schedule
                         validTargetDates.push(dateStr);
                      } else {
@@ -1308,7 +1323,7 @@ function saveAvailabilityFromPanel(datesToProcess) {
         // --- JSON EXPORT ---
         function exportConfigurationToJson() {
             const dataToExport = {
-                version: "1.2", 
+                version: "1.3", // Updated version
                 timestamp: new Date().toISOString(),
                 horarioLaboralSemanal: appData.workingHours, 
                 configuracionEventosDiarios: appData.events, 
