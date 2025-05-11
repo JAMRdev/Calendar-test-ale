@@ -1047,9 +1047,8 @@
             }
             const type = document.getElementById('interviewTypePanel').value;
             const duration = parseInt(document.getElementById('slotDurationMinutesPanel').value);
-            const customDayStart = document.getElementById('dayCustomStartTimePanel')?.value;
-            const customDayEnd = document.getElementById('dayCustomEndTimePanel')?.value;
-
+            const formCustomDayStart = document.getElementById('dayCustomStartTimePanel')?.value;
+            const formCustomDayEnd = document.getElementById('dayCustomEndTimePanel')?.value;
 
             if (!type || !duration) {
                 showNotification('Por favor, completa tipo y duración de los slots.', 'error'); return;
@@ -1062,6 +1061,7 @@
             datesToProcess.forEach(dateStr => {
                 if (isDateTodayOrPast(dateStr)) {
                     addLog("Generación de Slots Omitida (Fecha Inválida)", `Día ${dateStr} es hoy o pasado.`);
+                     if (appData.events[dateStr] && appData.events[dateStr].type === 'slots') { delete appData.events[dateStr]; }
                 } else {
                     validDatesToProcess.push(dateStr);
                 }
@@ -1069,47 +1069,47 @@
 
             if (validDatesToProcess.length === 0) {
                 showNotification("No se pueden generar horarios para días pasados o el actual.", "warning");
+                renderCalendar(); // Re-render in case some past days were cleared
+                updateSidePanel();
                 return;
             }
-
 
             validDatesToProcess.forEach(dateStr => {
                 const dayOfWeek = new Date(dateStr + 'T00:00:00Z').getDay();
                 const weeklySetting = appData.workingHours[dayOfWeek];
 
-                // **CRUCIAL FIX**: If weekly day is not active, skip this day entirely, UNLESS valid custom hours are provided.
-                if (!weeklySetting.active && (!customDayStart || !customDayEnd || parseTime(customDayStart) >= parseTime(customDayEnd))) {
-                     addLog("Generación de Slots Omitida", `Día ${dateStr} no es laborable (semanal) y no se proveyó horario custom válido.`);
-                     if (appData.events[dateStr] && appData.events[dateStr].type === 'slots') { delete appData.events[dateStr]; } // Clear if it had slots
-                     return; // Skip this day
+                // **STRICT CHECK**: If the day of the week is not active in the weekly schedule,
+                // no slots should be generated for this specific date (dateStr), REGARDLESS of custom hours.
+                if (!weeklySetting.active) {
+                    addLog("Generación de Slots Omitida (Día Semanal No Laborable)", `Día ${dateStr} (que es ${getDayName(dayOfWeek)}) no está activo en el horario semanal.`);
+                    // If it was previously a working day with slots, clear them.
+                    if (appData.events[dateStr] && appData.events[dateStr].type === 'slots') {
+                        delete appData.events[dateStr];
+                        addLog("Limpieza de Slots", `Slots eliminados para ${dateStr} por ser día no laborable semanalmente.`);
+                    }
+                    return; // Skip this dateStr using return in forEach
                 }
 
-                let dayStartToUse = customDayStart;
-                let dayEndToUse = customDayEnd;
+                // If weeklySetting.active is true, proceed.
+                // Determine effective working hours: custom from form if valid, otherwise weekly.
+                let dayStartToUse = formCustomDayStart;
+                let dayEndToUse = formCustomDayEnd;
+                let useCustomHours = false;
 
-                // If custom times are invalid or not provided, fall back to weekly settings (only if weekly is active)
-                if (!customDayStart || !customDayEnd || parseTime(customDayStart) >= parseTime(customDayEnd)) {
-                    if (weeklySetting && weeklySetting.active) {
-                        dayStartToUse = weeklySetting.startTime;
-                        dayEndToUse = weeklySetting.endTime;
-                    } else {
-                        // This case should now be caught by the CRUCIAL FIX above if weekly is inactive
-                        // If weekly is active but custom times were bad, this is the fallback.
-                        // If weekly is inactive and custom times were bad, it's already returned.
-                        if (!weeklySetting.active) { // Should not be reached if CRUCIAL FIX is effective
-                             addLog("Lógica Inesperada", `Día ${dateStr} con weekly inactive pero no retornado antes.`);
-                             return;
-                        }
-                        dayStartToUse = weeklySetting.startTime;
-                        dayEndToUse = weeklySetting.endTime;
-                    }
+                if (formCustomDayStart && formCustomDayEnd && parseTime(formCustomDayStart) < parseTime(formCustomDayEnd)) {
+                    useCustomHours = true; // Valid custom hours provided in the form
+                } else {
+                    // Custom hours from form are invalid or not fully provided, use weekly hours
+                    dayStartToUse = weeklySetting.startTime;
+                    dayEndToUse = weeklySetting.endTime;
                 }
                 
                 const startTimeInMinutes = parseTime(dayStartToUse);
                 const endTimeInMinutes = parseTime(dayEndToUse);
 
                 if (startTimeInMinutes >= endTimeInMinutes) { 
-                    addLog("Error en Horario", `Para ${dateStr}, inicio (${dayStartToUse}) no es anterior a fin (${dayEndToUse}).`);
+                    addLog("Error en Horario Efectivo", `Para ${dateStr}, inicio (${dayStartToUse}) no es anterior a fin (${dayEndToUse}). Se omiten slots.`);
+                    if (appData.events[dateStr] && appData.events[dateStr].type === 'slots') { delete appData.events[dateStr]; } // Clear if invalid hours led to this
                     return; 
                 }
                 
@@ -1136,17 +1136,20 @@
                 appData.events[dateStr] = { type: 'slots', slots: slots, daySettings: { dayStartTime: dayStartToUse, dayEndTime: dayEndToUse, slotDurationMinutes: duration, interviewType: type }};
             });
             
-            let logDetails = `Tipo: ${type}, Duración: ${duration}m. Para día(s): ${validDatesToProcess.join(', ')}. Horario custom usado si provisto: ${customDayStart}-${customDayEnd}`;
-            addLog("Disponibilidad (Slots) Guardada", logDetails);
+            let logDetails = `Tipo: ${type}, Duración: ${duration}m. Para día(s) válidos y laborables: ${validDatesToProcess.join(', ')}.`;
+            if (formCustomDayStart && formCustomDayEnd) {
+                logDetails += ` Horario custom intentado: ${formCustomDayStart}-${formCustomDayEnd}.`;
+            }
+            addLog("Disponibilidad (Slots) Guardada/Actualizada", logDetails);
 
             if (daysProcessedCount > 0) {
-                if (validDatesToProcess.length === 1) {
+                if (validDatesToProcess.length === 1 && daysProcessedCount === 1) { 
                     showNotification(`Día actualizado con ${appData.events[validDatesToProcess[0]]?.slots.length || 0} horario(s).`, "success");
                 } else {
-                    showNotification(`${daysProcessedCount} día(s) actualizados. Total ${totalSlotsGeneratedOverall} slots.`, "success");
+                    showNotification(`${daysProcessedCount} día(s) válidos y laborables actualizados. Total ${totalSlotsGeneratedOverall} slots.`, "success");
                 }
             } else {
-                 showNotification("No se generaron horarios. Verifica que los días seleccionados sean laborables y futuros, o que el horario custom sea válido.", "warning");
+                 showNotification("No se generaron horarios. Verifica que los días seleccionados sean laborables y futuros.", "warning");
             }
             renderCalendar();
             updateSidePanel();
@@ -1221,12 +1224,17 @@
                 if (isDateTodayOrPast(dateStr)) {
                     addLog("Pegado Omitido (Fecha Inválida)", `Día ${dateStr} es hoy o pasado.`);
                 } else {
-                    validTargetDates.push(dateStr);
+                     const dayOfWeek = new Date(dateStr + 'T00:00:00Z').getDay();
+                     if (appData.workingHours[dayOfWeek].active) { // Only paste to days that are active in weekly schedule
+                        validTargetDates.push(dateStr);
+                     } else {
+                        addLog("Pegado Omitido (Día Semanal No Laborable)", `Día ${dateStr} no es laborable.`);
+                     }
                 }
             });
 
             if (validTargetDates.length === 0) {
-                showNotification("No se puede pegar disponibilidad en días pasados o el actual.", "warning");
+                showNotification("No se puede pegar disponibilidad en días pasados, el actual o días no laborables semanalmente.", "warning");
                 return;
             }
 
