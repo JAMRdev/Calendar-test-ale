@@ -199,7 +199,7 @@
     <div class="container mx-auto p-2 sm:p-4 md:p-6 lg:p-8">
         <header class="mb-6 sm:mb-8 md:mb-10 text-center">
             <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-700">Administrador de disponibilidad</h1>
-            <p class="text-slate-500 mt-2 sm:mt-3 text-base sm:text-lg">Gestiona tu disponibilidad de forma eficiente.</p>
+            <p class="text-slate-500 mt-2 sm:mt-3 text-base sm:text-lg">versión de prueba - AleM</p>
         </header>
         
         <div class="flex flex-col md:flex-row gap-4 md:gap-6 lg:gap-8">
@@ -1055,7 +1055,7 @@
             
             let daysProcessedCount = 0;
             let totalSlotsGeneratedOverall = 0;
-            const validDatesForSlotGeneration = []; // Dates that are future and working days (weekly or custom)
+            const validDatesForSlotGeneration = []; 
             const skippedNonWorkingOrPastDays = [];
 
             datesToProcess.forEach(dateStr => {
@@ -1063,37 +1063,38 @@
                     addLog("Generación de Slots Omitida (Fecha Inválida)", `Día ${dateStr} es hoy o pasado.`);
                     if (appData.events[dateStr] && appData.events[dateStr].type === 'slots') { delete appData.events[dateStr]; }
                     skippedNonWorkingOrPastDays.push(dateStr);
-                    return; // Skip this date
+                    return; 
                 }
 
                 const dayOfWeek = new Date(dateStr + 'T00:00:00Z').getDay();
                 const weeklySetting = appData.workingHours[dayOfWeek];
                 
-                // Determine if custom hours from the form are valid
                 let useCustomHours = false;
                 if (formCustomDayStart && formCustomDayEnd && parseTime(formCustomDayStart) < parseTime(formCustomDayEnd)) {
                     useCustomHours = true;
                 }
 
-                // **CRITICAL CHECK**: If the day of the week is not active in the weekly schedule,
-                // AND no valid custom hours are provided to override it, then skip this day.
+                // **CORRECTED LOGIC STARTS HERE**
                 if (!weeklySetting.active && !useCustomHours) {
-                    addLog("Generación de Slots Omitida (Día Semanal No Laborable)", `Día ${dateStr} (${getDayName(dayOfWeek)}) no está activo en horario semanal y no hay horario custom válido.`);
+                    // If the day is NOT active in weekly schedule AND no valid custom hours are provided to override,
+                    // then this day is definitively non-working.
+                    addLog("Generación de Slots Omitida (Día Semanal No Laborable sin Override)", `Día ${dateStr} (${getDayName(dayOfWeek)}) no está activo en horario semanal y no hay horario custom válido.`);
                     if (appData.events[dateStr] && appData.events[dateStr].type === 'slots') {
-                        delete appData.events[dateStr]; // Clear if it had slots
-                        addLog("Limpieza de Slots", `Slots eliminados para ${dateStr} por ser día no laborable semanalmente.`);
+                        delete appData.events[dateStr]; 
+                        addLog("Limpieza de Slots", `Slots eliminados para ${dateStr} por ser día no laborable.`);
                     }
                     skippedNonWorkingOrPastDays.push(dateStr);
                     return; // Skip this dateStr
                 }
+                // **CORRECTED LOGIC ENDS HERE**
                 validDatesForSlotGeneration.push(dateStr);
             });
 
             if (validDatesForSlotGeneration.length === 0) {
-                if (skippedNonWorkingOrPastDays.length > 0) {
+                if(skippedNonWorkingOrPastDays.length > 0 && datesToProcess.length === skippedNonWorkingOrPastDays.length){
                      showNotification("No se generaron horarios. Los días seleccionados no son laborables o son pasados/actuales.", "warning");
-                } else {
-                     showNotification("No hay días válidos para procesar.", "warning"); // Should not happen if initial datesToProcess was not empty
+                } else if (datesToProcess.length > 0) { // Some dates were selected but all were invalid/non-working
+                     showNotification("No se pueden generar horarios para los días seleccionados (pasados, actuales o no laborables).", "warning");
                 }
                 renderCalendar(); 
                 updateSidePanel();
@@ -1104,15 +1105,15 @@
                 const dayOfWeek = new Date(dateStr + 'T00:00:00Z').getDay();
                 const weeklySetting = appData.workingHours[dayOfWeek];
                 
-                let dayStartToUse = formCustomDayStart;
-                let dayEndToUse = formCustomDayEnd;
+                let dayStartToUse, dayEndToUse;
                 let useCustomHours = false;
 
                 if (formCustomDayStart && formCustomDayEnd && parseTime(formCustomDayStart) < parseTime(formCustomDayEnd)) {
+                    dayStartToUse = formCustomDayStart;
+                    dayEndToUse = formCustomDayEnd;
                     useCustomHours = true; 
                 } else {
-                    // Fallback to weekly if custom are invalid or not fully provided
-                    // This path is taken only if weeklySetting.active was true (checked above)
+                    // This fallback is now only relevant if weeklySetting.active was true
                     dayStartToUse = weeklySetting.startTime;
                     dayEndToUse = weeklySetting.endTime;
                 }
@@ -1226,7 +1227,9 @@
             }
             appData.copiedDayData = JSON.parse(JSON.stringify(appData.events[sourceDateStr]));
             addLog("Disponibilidad de Día Copiada", `Desde: ${sourceDateStr} (Tipo: ${appData.copiedDayData.daySettings.interviewType}, Dur: ${appData.copiedDayData.daySettings.slotDurationMinutes}m)`);
-            showNotification(`Disponibilidad de ${new Date(sourceDateStr+'T00:00:00Z').toLocaleDateString('es-ES', {month:'short', day:'numeric'})} copiada.`, "success");
+             const [year, month, day] = sourceDateStr.split('-').map(Number);
+            const dateObj = new Date(year, month - 1, day);
+            showNotification(`Disponibilidad de ${dateObj.toLocaleDateString('es-ES', {month:'short', day:'numeric'})} copiada.`, "success");
             updateSidePanel(); 
         }
 
