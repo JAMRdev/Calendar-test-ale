@@ -20,8 +20,8 @@
                 min-height: 100px;
             }
         }
-        .calendar-day:hover {
-            background-color: #e2e8f0; 
+        .calendar-day:hover:not(.disabled-for-availability) {
+            background-color: #e0e7ff; /* indigo-100 for hover */
         }
         .calendar-day.selected {
             background-color: #c7d2fe; 
@@ -45,15 +45,18 @@
             background-color: #f1f5f9; /* slate-100 */
         }
 
-
         .slot {
             border: 1px solid #e2e8f0; 
             padding: 0.5rem 0.75rem; 
             margin-bottom: 0.5rem; 
             border-radius: 0.5rem; 
+            transition: background-color 0.2s;
+        }
+        .slot:hover {
+            background-color: #f8fafc; /* slate-50 */
         }
         .slot-available { background-color: #dcfce7; border-left: 4px solid #22c55e; } 
-        .slot-global-break { background-color: #e2e8f0; border-left: 4px solid #64748b; color: #334155; } 
+        .slot-global-break { background-color: #eef2ff; border-left: 4px solid #64748b; color: #334155; } /* indigo-50 */
 
         .scrollable-area::-webkit-scrollbar { width: 6px; }
         .scrollable-area::-webkit-scrollbar-track { background: #f8fafc; border-radius: 10px; } 
@@ -67,7 +70,7 @@
             scrollbar-color: #94a3b8 #f8fafc;
         }
         #logsDisplayContainer {
-             max-height: 300px; /* Max height for logs, overflow handled by class */
+             max-height: 250px; /* Adjusted max height for logs */
         }
 
         .modal {
@@ -96,90 +99,96 @@
             margin-right: auto;
         }
         .btn {
-            padding: 0.5rem 1rem; 
+            padding: 0.625rem 1.25rem; /* py-2.5 px-5 */
             border-radius: 0.5rem; 
             font-weight: 500; 
-            transition: background-color 0.2s, box-shadow 0.2s;
+            transition: background-color 0.2s, box-shadow 0.2s, opacity 0.2s;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 0.375rem; 
-            text-decoration: none;
+            gap: 0.5rem; 
             line-height: 1.25rem; 
         }
         .btn:disabled {
-            background-color: #cbd5e1; /* slate-300 */
+            background-color: #e2e8f0; /* slate-200 */
             color: #94a3b8; /* slate-400 */
             cursor: not-allowed;
             box-shadow: none;
         }
-        .btn-primary { background-color: #4f46e5; color: white; } 
+        .btn-primary { background-color: #4f46e5; color: white; } /* indigo-600 */
         .btn-primary:hover:not(:disabled) { background-color: #4338ca; box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.39); } 
-        .btn-danger { background-color: #e11d48; color: white; } 
+        .btn-danger { background-color: #e11d48; color: white; } /* rose-600 */
         .btn-danger:hover:not(:disabled) { background-color: #be123c; box-shadow: 0 4px 14px 0 rgba(225, 29, 72, 0.39); } 
-        .btn-warning { background-color: #f59e0b; color: white; } 
+        .btn-warning { background-color: #f59e0b; color: white; } /* amber-500 */
         .btn-warning:hover:not(:disabled) { background-color: #d97706; box-shadow: 0 4px 14px 0 rgba(245, 158, 11, 0.39); } 
-        .btn-success { background-color: #16a34a; color: white; } 
+        .btn-success { background-color: #16a34a; color: white; } /* green-600 */
         .btn-success:hover:not(:disabled) { background-color: #15803d; box-shadow: 0 4px 14px 0 rgba(22, 163, 74, 0.39); } 
-        .btn-info { background-color: #0ea5e9; color: white; } 
+        .btn-info { background-color: #0ea5e9; color: white; } /* sky-500 */
         .btn-info:hover:not(:disabled) { background-color: #0284c7; box-shadow: 0 4px 14px 0 rgba(14, 165, 233, 0.39); } 
-        .btn-secondary { background-color: #64748b; color: white; } 
+        .btn-secondary { background-color: #64748b; color: white; } /* slate-500 */
         .btn-secondary:hover:not(:disabled) { background-color: #475569; box-shadow: 0 4px 14px 0 rgba(100, 116, 139, 0.39); } 
 
         .icon-sm { width: 1rem; height: 1rem; } 
         .log-entry {
             padding: 0.5rem 0.75rem;
-            border-bottom: 1px solid #e2e8f0; /* slate-200 */
-            font-size: 0.8rem; /* text-xs */
+            border-bottom: 1px solid #e2e8f0; 
+            font-size: 0.8rem; 
             line-height: 1.2;
         }
         .log-entry:last-child {
             border-bottom: none;
         }
         .log-timestamp {
-            color: #64748b; /* slate-500 */
-            font-size: 0.7rem; /* smaller */
+            color: #64748b; 
+            font-size: 0.7rem; 
             margin-right: 0.5rem;
         }
         .log-action {
-            font-weight: 500; /* medium */
-            color: #1e293b; /* slate-800 */
+            font-weight: 500; 
+            color: #1e293b; 
         }
         .log-details {
-            color: #475569; /* slate-600 */
+            color: #475569; 
             margin-left: 0.5rem;
             word-break: break-word;
         }
         .working-hours-row {
             display: grid;
-            /* Checkbox, DayName, StartTime, 'a', EndTime */
-            grid-template-columns: min-content minmax(40px,auto) 1fr auto 1fr; 
-            gap: 0.375rem; /* gap-1.5 */
+            grid-template-columns: min-content auto 1fr auto 1fr; 
+            gap: 0.5rem; /* Increased gap slightly for better spacing */
             align-items: center;
-            margin-bottom: 0.375rem; /* mb-1.5 */
-            padding: 0.375rem; /* p-1.5 */
-            border-radius: 0.375rem; /* rounded-md */
+            margin-bottom: 0.5rem; /* mb-2 */
+            padding: 0.5rem; /* p-2 */
+            border-radius: 0.5rem; /* rounded-lg */
         }
          .working-hours-row .day-label {
-            font-weight: 500; /* medium */
+            font-weight: 500; 
             text-align: left;
-            /* min-width: 50px;  Let grid handle this */
+            min-width: 35px; /* Slightly reduced for very small screens if needed */
         }
         .working-hours-row input[type="checkbox"] {
-            width: 1rem; /* w-4 */
-            height: 1rem; /* h-4 */
-            margin-right: 0.125rem; /* mr-0.5 */
+            width: 1rem; 
+            height: 1rem; 
+            margin-right: 0.25rem; /* mr-1 */
+            accent-color: #4f46e5; /* indigo-600 */
         }
         .working-hours-row select {
-            padding: 0.375rem 0.5rem; /* p-1.5 */
+            padding: 0.5rem; /* p-2 */
             font-size: 0.75rem; /* text-xs */
             border-color: #cbd5e1; /* slate-300 */
-            flex: 1; /* Allow select to grow */
-            min-width: 0; /* Important for flex items to shrink if needed */
+            border-radius: 0.375rem; /* rounded-md */
+            background-color: white;
+            flex: 1; 
+            min-width: 60px; /* Ensure select has a minimum width */
         }
         .working-hours-row .time-separator {
             text-align: center;
-            color: #64748b; /* slate-500 */
+            color: #64748b; 
+            padding: 0 0.125rem; /* px-0.5 for a bit of space */
+        }
+        .form-select:disabled {
+            background-color: #f1f5f9; /* slate-100 */
+            color: #94a3b8; /* slate-400 */
         }
     </style>
 </head>
@@ -209,17 +218,17 @@
                 <div id="sidePanelContent" class="space-y-4 sm:space-y-5">
                     </div>
                 
-                <div id="weeklyHoursContainer" class="mt-6 sm:mt-8 border-t border-slate-200 pt-4 sm:pt-6 p-1 border rounded-lg border-slate-200 bg-slate-50">
-                    <h4 class="text-base sm:text-lg font-semibold mb-3 text-slate-600 px-2">Horario Laboral Semanal</h4>
+                <div id="weeklyHoursContainer" class="mt-6 sm:mt-8 border-t border-slate-200 pt-4 sm:pt-6 p-2 border rounded-lg border-slate-200 bg-slate-50/50">
+                    <h4 class="text-base sm:text-lg font-semibold mb-3 text-slate-600 px-1">Horario Laboral Semanal</h4>
                     <div id="weeklyWorkingHoursPanel" class="space-y-1 text-sm">
                         </div>
-                    <button id="applyMondayToAllBtn" class="btn btn-info w-full mt-2 text-xs">Aplicar Lunes a Todos</button>
+                    <button id="applyMondayToAllBtn" class="btn btn-info w-full mt-3 text-xs">Aplicar Lunes a Todos</button>
                 </div>
 
                 <div id="globalBreaksContainer" class="mt-6 sm:mt-8 border-t border-slate-200 pt-4 sm:pt-6">
                      <h4 class="text-lg font-semibold mb-3 text-slate-600">Descansos Globales</h4>
                      <div id="globalNonAvailabilityList" class="space-y-2 sm:space-y-2.5 text-sm mb-3 sm:mb-4"></div>
-                     <div class="space-y-2.5 sm:space-y-3 p-3 bg-slate-50 rounded-lg">
+                     <div class="space-y-2.5 sm:space-y-3 p-3 bg-slate-50/50 rounded-lg border border-slate-200">
                          <input type="time" id="globalBreakStartTime" class="w-full p-2 border border-slate-300 rounded-md text-sm" value="12:00">
                          <input type="time" id="globalBreakEndTime" class="w-full p-2 border border-slate-300 rounded-md text-sm" value="13:00">
                          <input type="text" id="globalBreakTitle" class="w-full p-2 border border-slate-300 rounded-md text-sm" placeholder="Ej: Almuerzo">
@@ -505,6 +514,7 @@
             daysOfWeek.forEach((dayName, index) => {
                 const dayConfig = appData.workingHours[index];
                 const row = document.createElement('div');
+                // Updated grid columns for better select sizing
                 row.className = 'working-hours-row items-center bg-slate-50 even:bg-slate-100';
                 
                 const checkbox = document.createElement('input');
@@ -521,7 +531,8 @@
                 const startTimeSelect = document.createElement('select');
                 startTimeSelect.dataset.dayIndex = index;
                 startTimeSelect.dataset.type = 'start';
-                startTimeSelect.className = 'form-select border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white flex-1';
+                // Added flex-1 and min-width: 0 to ensure select elements can shrink and grow
+                startTimeSelect.className = 'form-select border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white flex-1 min-w-0';
                 populateTimeSelectsForWorkingHours(startTimeSelect, dayConfig.startTime);
                 startTimeSelect.disabled = !dayConfig.active;
                 startTimeSelect.addEventListener('change', handleWorkingTimeChange);
@@ -533,7 +544,7 @@
                 const endTimeSelect = document.createElement('select');
                 endTimeSelect.dataset.dayIndex = index;
                 endTimeSelect.dataset.type = 'end';
-                endTimeSelect.className = 'form-select border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white flex-1';
+                endTimeSelect.className = 'form-select border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white flex-1 min-w-0';
                 populateTimeSelectsForWorkingHours(endTimeSelect, dayConfig.endTime);
                 endTimeSelect.disabled = !dayConfig.active;
                 endTimeSelect.addEventListener('change', handleWorkingTimeChange);
@@ -589,9 +600,6 @@
 
             showConfirm("Aplicar Lunes a Todos", "¿Copiar horario del Lunes a todos los demás días laborables (Martes a Viernes)? Domingo y Sábado no se modificarán.", () => {
                 for (let i = 2; i <= 5; i++) { 
-                    // Only copy if the target day is marked as active in the weekly schedule
-                    // or always copy and let the user deactivate if needed?
-                    // For now, let's copy to all Tue-Fri, and they inherit Monday's active state too.
                     appData.workingHours[i].active = mondayConfig.active;
                     appData.workingHours[i].startTime = mondayConfig.startTime;
                     appData.workingHours[i].endTime = mondayConfig.endTime;
@@ -773,7 +781,6 @@
             document.getElementById('removeSelectedDaysOffBtn').addEventListener('click', () => removeDayOffStatus(appData.selectedDates));
             document.getElementById('clearSelectedDaysSlotsBtn').addEventListener('click', () => clearSlotsForDays(appData.selectedDates));
             if (document.getElementById('pasteDayAvailabilityToSelectedBtn')) {
-                 // Disable paste if any selected target date is past/today
                 document.getElementById('pasteDayAvailabilityToSelectedBtn').disabled = someDateIsPastOrToday;
                 if(someDateIsPastOrToday) document.getElementById('pasteDayAvailabilityToSelectedBtn').title = "No se puede pegar en días pasados o el actual.";
                 document.getElementById('pasteDayAvailabilityToSelectedBtn').addEventListener('click', () => pasteDayAvailability(appData.selectedDates));
