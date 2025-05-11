@@ -45,7 +45,6 @@
         .slot-available { background-color: #dcfce7; border-left: 4px solid #22c55e; } 
         .slot-global-break { background-color: #e2e8f0; border-left: 4px solid #64748b; color: #334155; } 
 
-        /* Styles for scrollbars, applied if overflow is active */
         .scrollable-area::-webkit-scrollbar { width: 6px; }
         .scrollable-area::-webkit-scrollbar-track { background: #f8fafc; border-radius: 10px; } 
         .scrollable-area::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; } 
@@ -134,6 +133,34 @@
             margin-left: 0.5rem;
             word-break: break-word;
         }
+        .working-hours-row {
+            display: grid;
+            grid-template-columns: auto 1fr 1fr auto; /* Checkbox, DayName, Times, CopyButton (for Monday) */
+            gap: 0.5rem; /* Reduced gap */
+            align-items: center;
+            margin-bottom: 0.5rem; /* Reduced margin */
+            padding: 0.375rem; /* p-1.5 */
+            border-radius: 0.375rem; /* rounded-md */
+        }
+         .working-hours-row .day-label {
+            font-weight: 500; /* medium */
+            text-align: left;
+            min-width: 70px; /* Ensure day names don't wrap too soon */
+        }
+        .working-hours-row .time-inputs {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem; /* space-x-1 */
+        }
+        .working-hours-row input[type="checkbox"] {
+            width: 1.125rem; /* w-4.5 */
+            height: 1.125rem; /* h-4.5 */
+            margin-right: 0.25rem;
+        }
+        .working-hours-row select {
+            padding: 0.375rem; /* p-1.5 */
+            font-size: 0.75rem; /* text-xs */
+        }
     </style>
 </head>
 <body class="antialiased text-slate-800">
@@ -154,13 +181,21 @@
                 </div>
                 <div id="calendarGrid" class="grid grid-cols-7 gap-1 sm:gap-1.5 bg-white p-2 sm:p-3 rounded-xl shadow-xl">
                     </div>
-                 <p class="mt-2 sm:mt-3 text-xs text-slate-500 text-center">Usa Shift+Click para rango, Ctrl/Cmd+Click para múltiple.</p>
+                 <p class="mt-2 sm:mt-3 text-xs text-slate-500 text-center">Usa Shift+Click para rango, Ctrl/Cmd+Click o Tap para múltiple.</p>
             </div>
 
             <div id="sidePanel" class="w-full md:w-1/3 lg:w-1/4 bg-white p-4 sm:p-5 rounded-xl shadow-xl self-start md:sticky md:top-6 scrollable-area">
                 <h3 id="sidePanelTitle" class="text-xl sm:text-2xl font-semibold mb-4 sm:mb-5 text-slate-700 border-b border-slate-200 pb-2 sm:pb-3">Detalles y Acciones</h3>
                 <div id="sidePanelContent" class="space-y-4 sm:space-y-5">
                     </div>
+                
+                <div id="weeklyHoursContainer" class="mt-6 sm:mt-8 border-t border-slate-200 pt-4 sm:pt-6">
+                    <h4 class="text-lg font-semibold mb-3 text-slate-600">Horario Laboral Semanal</h4>
+                    <div id="weeklyWorkingHoursPanel" class="space-y-1.5 text-sm">
+                        </div>
+                    <button id="applyMondayToAllBtn" class="btn btn-info w-full mt-3 text-xs">Aplicar Lunes a Todos</button>
+                </div>
+
                 <div id="globalBreaksContainer" class="mt-6 sm:mt-8 border-t border-slate-200 pt-4 sm:pt-6">
                      <h4 class="text-lg font-semibold mb-3 text-slate-600">Descansos Globales</h4>
                      <div id="globalNonAvailabilityList" class="space-y-2 sm:space-y-2.5 text-sm mb-3 sm:mb-4"></div>
@@ -220,6 +255,15 @@
             globalNonAvailability: [
                 { id: 'gnp_lunch', start: "12:00", end: "13:00", title: "Almuerzo (Global)" }
             ],
+            workingHours: { // Default working hours (Monday to Friday, 9 to 5)
+                0: { active: false, startTime: "09:00", endTime: "17:00" }, // Domingo
+                1: { active: true, startTime: "09:00", endTime: "17:00" },  // Lunes
+                2: { active: true, startTime: "09:00", endTime: "17:00" },  // Martes
+                3: { active: true, startTime: "09:00", endTime: "17:00" },  // Miércoles
+                4: { active: true, startTime: "09:00", endTime: "17:00" },  // Jueves
+                5: { active: true, startTime: "09:00", endTime: "17:00" },  // Viernes
+                6: { active: false, startTime: "09:00", endTime: "17:00" }  // Sábado
+            },
             copiedDayData: null,
             logs: [] 
         };
@@ -231,6 +275,8 @@
         const nextMonthBtn = document.getElementById('nextMonthBtn');
         const sidePanelTitle = document.getElementById('sidePanelTitle');
         const sidePanelContent = document.getElementById('sidePanelContent');
+        const weeklyWorkingHoursPanelEl = document.getElementById('weeklyWorkingHoursPanel');
+        const applyMondayToAllBtn = document.getElementById('applyMondayToAllBtn');
         const globalNonAvailabilityListEl = document.getElementById('globalNonAvailabilityList');
         const addGlobalBreakBtn = document.getElementById('addGlobalBreakBtn');
         const exportJsonBtn = document.getElementById('exportJsonBtn');
@@ -396,6 +442,7 @@
 
         // --- SIDE PANEL LOGIC ---
         function updateSidePanel() {
+            renderWeeklyWorkingHoursPanel(); // Render weekly hours config first
             renderGlobalNonAvailabilityList(); 
             sidePanelContent.innerHTML = ''; 
 
@@ -412,6 +459,124 @@
                 renderMultiDayPanel();
             }
         }
+        
+        // --- WEEKLY WORKING HOURS PANEL ---
+        function renderWeeklyWorkingHoursPanel() {
+            if (!weeklyWorkingHoursPanelEl) return;
+            weeklyWorkingHoursPanelEl.innerHTML = '';
+            const daysOfWeek = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+
+            daysOfWeek.forEach((dayName, index) => {
+                const dayConfig = appData.workingHours[index];
+                const row = document.createElement('div');
+                row.className = 'working-hours-row items-center bg-slate-50 even:bg-slate-100';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = dayConfig.active;
+                checkbox.dataset.dayIndex = index;
+                checkbox.className = 'form-checkbox h-4 w-4 text-indigo-600 transition duration-150 ease-in-out rounded';
+                checkbox.addEventListener('change', handleWorkingDayToggle);
+
+                const dayLabel = document.createElement('span');
+                dayLabel.textContent = dayName.substring(0,3) + "."; // Abbreviate for space
+                dayLabel.className = 'day-label text-xs text-slate-700';
+                
+                const timeInputsDiv = document.createElement('div');
+                timeInputsDiv.className = 'time-inputs flex-grow';
+
+                const startTimeSelect = document.createElement('select');
+                startTimeSelect.dataset.dayIndex = index;
+                startTimeSelect.dataset.type = 'start';
+                startTimeSelect.className = 'form-select w-full border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white';
+                populateTimeSelectsForWorkingHours(startTimeSelect, dayConfig.startTime);
+                startTimeSelect.disabled = !dayConfig.active;
+                startTimeSelect.addEventListener('change', handleWorkingTimeChange);
+
+                const toLabel = document.createElement('span');
+                toLabel.textContent = 'a';
+                toLabel.className = 'text-slate-500 text-xs mx-1';
+                
+                const endTimeSelect = document.createElement('select');
+                endTimeSelect.dataset.dayIndex = index;
+                endTimeSelect.dataset.type = 'end';
+                endTimeSelect.className = 'form-select w-full border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white';
+                populateTimeSelectsForWorkingHours(endTimeSelect, dayConfig.endTime);
+                endTimeSelect.disabled = !dayConfig.active;
+                endTimeSelect.addEventListener('change', handleWorkingTimeChange);
+
+                timeInputsDiv.appendChild(startTimeSelect);
+                timeInputsDiv.appendChild(toLabel);
+                timeInputsDiv.appendChild(endTimeSelect);
+                
+                row.appendChild(checkbox);
+                row.appendChild(dayLabel);
+                row.appendChild(timeInputsDiv);
+                
+                weeklyWorkingHoursPanelEl.appendChild(row);
+            });
+        }
+
+        function populateTimeSelectsForWorkingHours(selectElement, defaultValue) {
+            selectElement.innerHTML = '';
+            for (let hour = 0; hour < 24; hour++) {
+                for (let minute = 0; minute < 60; minute += 15) { // 15-minute increments
+                    const timeString = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                    const option = document.createElement('option');
+                    option.value = timeString;
+                    option.textContent = timeString;
+                    selectElement.appendChild(option);
+                }
+            }
+            selectElement.value = defaultValue || "09:00";
+        }
+
+        function handleWorkingDayToggle(event) {
+            const dayIndex = parseInt(event.target.dataset.dayIndex);
+            const isActive = event.target.checked;
+            appData.workingHours[dayIndex].active = isActive;
+            addLog("Horario Semanal Modificado", `Día ${getDayName(dayIndex)} ${isActive ? 'activado' : 'desactivado'}.`);
+            renderWeeklyWorkingHoursPanel(); // Re-render to enable/disable time selects
+            // Potentially re-render calendar if auto-update of slots is desired upon changing working hours
+            // renderCalendar(); 
+            // updateSidePanel();
+        }
+
+        function handleWorkingTimeChange(event) {
+            const dayIndex = parseInt(event.target.dataset.dayIndex);
+            const type = event.target.dataset.type; // 'start' or 'end'
+            const newTime = event.target.value;
+
+            if (type === 'start') {
+                appData.workingHours[dayIndex].startTime = newTime;
+            } else {
+                appData.workingHours[dayIndex].endTime = newTime;
+            }
+            addLog("Horario Semanal Modificado", `Día ${getDayName(dayIndex)} - ${type === 'start' ? 'Inicio' : 'Fin'}: ${newTime}`);
+            // Potentially re-render calendar if auto-update of slots is desired
+        }
+        
+        applyMondayToAllBtn.addEventListener('click', () => {
+            const mondayConfig = appData.workingHours[1]; // Lunes es índice 1
+            if (!mondayConfig) return;
+
+            showConfirm("Aplicar Lunes a Todos", "¿Copiar horario del Lunes a todos los demás días laborables (Martes a Viernes)? Domingo y Sábado no se modificarán.", () => {
+                for (let i = 2; i <= 5; i++) { // Martes a Viernes
+                    if (appData.workingHours[i].active) { // Only apply to active days
+                        appData.workingHours[i].startTime = mondayConfig.startTime;
+                        appData.workingHours[i].endTime = mondayConfig.endTime;
+                    }
+                }
+                addLog("Horario Semanal Aplicado", "Configuración del Lunes copiada a Mar-Vie (activos).");
+                renderWeeklyWorkingHoursPanel();
+                showNotification("Horario del Lunes aplicado a los demás días laborables.", "success");
+            });
+        });
+
+        function getDayName(dayIndex) {
+            return ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"][dayIndex];
+        }
+
 
         function renderGlobalNonAvailabilityList() {
             if (!globalNonAvailabilityListEl) return;
@@ -486,9 +651,12 @@
         }
 
         function populateTimeSelects(duration, startTimeEl, endTimeEl, defaultStart, defaultEnd) {
+            // This function populates time selects for the DAY-SPECIFIC availability form
+            // It considers the slot duration for its increments.
+            // For WEEKLY working hours, use populateTimeSelectsForWorkingHours with fixed 15min increments.
             startTimeEl.innerHTML = '';
             endTimeEl.innerHTML = '';
-            const minutesIncrement = parseInt(duration);
+            const minutesIncrement = parseInt(duration); // This is slot duration
 
             for (let hour = 0; hour < 24; hour++) {
                 for (let minute = 0; minute < 60; minute += minutesIncrement) {
@@ -528,7 +696,9 @@
 
         function renderSingleDayPanel(dateStr) {
             const eventData = appData.events[dateStr];
-            let contentHTML = `<div>${getAvailabilityFormHTML(eventData?.daySettings, eventData?.slots[0]?.interviewType)}</div>`;
+            // The form no longer needs daySettings for start/end time, as this comes from weekly schedule
+            let contentHTML = `<div>${getAvailabilityFormHTML(null, eventData?.slots?.[0]?.interviewType)}</div>`;
+
 
             if (eventData) {
                 if (eventData.type === 'day-off') {
@@ -537,7 +707,13 @@
                     contentHTML += `<div class="mt-4 sm:mt-6 border-t border-slate-200 pt-3 sm:pt-5"><h4 class="text-base sm:text-lg font-semibold mb-2 sm:mb-3 text-slate-600">Horarios del Día</h4><div id="slotListContainer" class="scrollable-area overflow-y-auto max-h-80 sm:max-h-96 pr-1 space-y-2"></div></div>`;
                 }
             } else {
-                contentHTML += `<p class="text-slate-500 my-3 sm:my-4 text-sm italic">No hay disponibilidad configurada.</p>`;
+                const dayOfWeek = new Date(dateStr + 'T00:00:00Z').getDay();
+                const weeklySetting = appData.workingHours[dayOfWeek];
+                if (weeklySetting && weeklySetting.active) {
+                     contentHTML += `<p class="text-slate-500 my-3 sm:my-4 text-sm italic">Día laborable (${weeklySetting.startTime} - ${weeklySetting.endTime}). Define tipo/duración para generar horarios.</p>`;
+                } else {
+                    contentHTML += `<p class="text-slate-500 my-3 sm:my-4 text-sm italic">No es un día laborable según el horario semanal. Puedes marcarlo como disponible o ajustar el horario semanal.</p>`;
+                }
             }
             
             contentHTML += `
@@ -551,11 +727,8 @@
 
             sidePanelContent.innerHTML = contentHTML;
             
-            const dayStartTimePanel = document.getElementById('dayStartTimePanel');
-            const dayEndTimePanel = document.getElementById('dayEndTimePanel');
-            const slotDurationPanel = document.getElementById('slotDurationMinutesPanel');
-            const currentDaySettings = eventData?.daySettings;
-            populateTimeSelects(slotDurationPanel.value, dayStartTimePanel, dayEndTimePanel, currentDaySettings?.dayStartTime, currentDaySettings?.dayEndTime);
+            // No need to populateTimeSelects for dayStartTimePanel/dayEndTimePanel here as they are removed from this form.
+            const slotDurationPanel = document.getElementById('slotDurationMinutesPanel'); // This one still exists
 
             document.getElementById('saveAvailabilityBtnPanel').addEventListener('click', () => saveAvailabilityFromPanel([dateStr]));
             if (document.getElementById('markDayOffBtn')) document.getElementById('markDayOffBtn').addEventListener('click', () => markSelectedDaysAsOff([dateStr]));
@@ -569,7 +742,7 @@
                     document.querySelectorAll('.duration-btn-panel').forEach(b => b.classList.remove('bg-indigo-200', 'text-indigo-800', 'font-semibold'));
                     btn.classList.add('bg-indigo-200', 'text-indigo-800', 'font-semibold');
                     slotDurationPanel.value = btn.dataset.duration;
-                    populateTimeSelects(slotDurationPanel.value, dayStartTimePanel, dayEndTimePanel, dayStartTimePanel.value, dayEndTimePanel.value);
+                    // No need to call populateTimeSelects here as start/end times are from weekly schedule
                 });
             });
 
@@ -581,12 +754,12 @@
         function renderMultiDayPanel() {
             const firstSelectedDate = appData.selectedDates[0];
             const firstDayEvent = appData.events[firstSelectedDate];
-            const daySettings = firstDayEvent?.daySettings; 
+            // const daySettings = firstDayEvent?.daySettings; // Not needed for start/end time here
             const interviewType = firstDayEvent?.slots?.[0]?.interviewType;
 
             let contentHTML = `
                 <p class="text-sm text-slate-600 mb-3 sm:mb-4">Aplicar acciones a los ${appData.selectedDates.length} días seleccionados.</p>
-                <div>${getAvailabilityFormHTML(daySettings, interviewType, true)}</div>
+                <div>${getAvailabilityFormHTML(null, interviewType, true)}</div>
                 <div class="mt-4 sm:mt-6 space-y-2 border-t border-slate-200 pt-3 sm:pt-5">
                     <button id="markSelectedDaysOffBtn" class="btn btn-danger w-full">${ICONS.calendarOff} Marcar Libres</button>
                     <button id="removeSelectedDaysOffBtn" class="btn btn-warning w-full">${ICONS.calendarOn} Quitar Estado Libre</button>
@@ -595,10 +768,8 @@
                 </div>`;
             sidePanelContent.innerHTML = contentHTML; 
 
-            const dayStartTimePanel = document.getElementById('dayStartTimePanel');
-            const dayEndTimePanel = document.getElementById('dayEndTimePanel');
+            // No dayStartTimePanel/dayEndTimePanel to populate here
             const slotDurationPanel = document.getElementById('slotDurationMinutesPanel');
-            populateTimeSelects(slotDurationPanel.value, dayStartTimePanel, dayEndTimePanel, daySettings?.dayStartTime, daySettings?.dayEndTime);
 
             document.getElementById('saveAvailabilityBtnPanel').addEventListener('click', () => saveAvailabilityFromPanel(appData.selectedDates));
             document.getElementById('markSelectedDaysOffBtn').addEventListener('click', () => markSelectedDaysAsOff(appData.selectedDates));
@@ -612,17 +783,18 @@
                     document.querySelectorAll('.duration-btn-panel').forEach(b => b.classList.remove('bg-indigo-200', 'text-indigo-800', 'font-semibold'));
                     btn.classList.add('bg-indigo-200', 'text-indigo-800', 'font-semibold');
                     slotDurationPanel.value = btn.dataset.duration;
-                    populateTimeSelects(slotDurationPanel.value, dayStartTimePanel, dayEndTimePanel, dayStartTimePanel.value, dayEndTimePanel.value);
                 });
             });
         }
 
-        function getAvailabilityFormHTML(daySettings = null, interviewType = 'virtual', isMultiDay = false) {
-            const defaultDuration = daySettings?.slotDurationMinutes || "30";
+        function getAvailabilityFormHTML(daySettingsIgnored = null, interviewType = 'virtual', isMultiDay = false) {
+            // daySettingsIgnored is kept for signature compatibility but not used for start/end times
+            const defaultDuration = appData.events[appData.selectedDates[0]]?.daySettings?.slotDurationMinutes || "30"; // Use first selected day's duration or default
             const defaultInterviewType = interviewType || "virtual";
 
             return `
-                <h4 class="text-base sm:text-lg font-semibold mb-2 sm:mb-3 text-slate-600">${isMultiDay ? 'Disponibilidad Múltiple' : 'Abrir/Editar Disponibilidad'}</h4>
+                <h4 class="text-base sm:text-lg font-semibold mb-2 sm:mb-3 text-slate-600">${isMultiDay ? 'Definir Slots para Selección' : 'Definir Slots para el Día'}</h4>
+                <p class="text-xs text-slate-500 mb-2 sm:mb-3">El horario laboral se toma de la configuración semanal. Aquí define el tipo y duración de los slots.</p>
                 <div class="space-y-3 sm:space-y-4 text-sm">
                     <div>
                         <label for="interviewTypePanel" class="block text-xs font-medium text-slate-500 mb-0.5 sm:mb-1">Tipo de Entrevista:</label>
@@ -634,7 +806,7 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-slate-500 mb-0.5 sm:mb-1">Duración (minutos):</label>
+                        <label class="block text-xs font-medium text-slate-500 mb-0.5 sm:mb-1">Duración de Slots (minutos):</label>
                         <div class="flex space-x-1.5 sm:space-x-2">
                             <button data-duration="15" class="duration-btn-panel flex-1 p-1.5 sm:p-2 border border-slate-300 rounded-md hover:bg-slate-100 ${defaultDuration == 15 ? 'bg-indigo-200 text-indigo-800 font-semibold' : 'bg-white'}">15</button>
                             <button data-duration="30" class="duration-btn-panel flex-1 p-1.5 sm:p-2 border border-slate-300 rounded-md hover:bg-slate-100 ${defaultDuration == 30 ? 'bg-indigo-200 text-indigo-800 font-semibold' : 'bg-white'}">30</button>
@@ -642,17 +814,7 @@
                         </div>
                         <input type="hidden" id="slotDurationMinutesPanel" value="${defaultDuration}">
                     </div>
-                    <div class="grid grid-cols-2 gap-2 sm:gap-3">
-                        <div>
-                            <label for="dayStartTimePanel" class="block text-xs font-medium text-slate-500 mb-0.5 sm:mb-1">Inicio Jornada:</label>
-                            <select id="dayStartTimePanel" class="w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-white"></select>
-                        </div>
-                        <div>
-                            <label for="dayEndTimePanel" class="block text-xs font-medium text-slate-500 mb-0.5 sm:mb-1">Fin Jornada:</label>
-                            <select id="dayEndTimePanel" class="w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-white"></select>
-                        </div>
-                    </div>
-                    <button id="saveAvailabilityBtnPanel" class="btn btn-success w-full mt-1 sm:mt-2">${ICONS.plus} ${isMultiDay ? 'Aplicar a Selección' : 'Generar/Actualizar'}</button>
+                    <button id="saveAvailabilityBtnPanel" class="btn btn-success w-full mt-1 sm:mt-2">${ICONS.plus} ${isMultiDay ? 'Generar Slots para Selección' : 'Generar Slots para el Día'}</button>
                 </div>`;
         }
         
@@ -666,23 +828,26 @@
                 eventData.slots.forEach(slot => displayItems.push({...slot, itemType: 'slot', status: 'available'})); 
             }
 
-            const daySettings = eventData?.daySettings;
-            if (daySettings) {
+            const dayOfWeek = new Date(dateStr + 'T00:00:00Z').getDay();
+            const weeklyDaySetting = appData.workingHours[dayOfWeek];
+
+            if (weeklyDaySetting && weeklyDaySetting.active) { // Only add global breaks if it's a working day
                 appData.globalNonAvailability.forEach(breakItem => {
                     const breakStartMins = parseTime(breakItem.start);
                     const breakEndMins = parseTime(breakItem.end);
-                    const dayStartMins = parseTime(daySettings.dayStartTime);
-                    const dayEndMins = parseTime(daySettings.dayEndTime);
+                    const dayStartMins = parseTime(weeklyDaySetting.startTime);
+                    const dayEndMins = parseTime(weeklyDaySetting.endTime);
                     if (Math.max(dayStartMins, breakStartMins) < Math.min(dayEndMins, breakEndMins)) {
                          displayItems.push({ itemType: 'globalBreak', startTime: breakItem.start, endTime: breakItem.end, title: breakItem.title, id: breakItem.id });
                     }
                 });
             }
 
+
             displayItems.sort((a, b) => parseTime(a.startTime) - parseTime(b.startTime));
 
             if (displayItems.length === 0) {
-                 container.innerHTML = `<p class="text-slate-500 text-xs sm:text-sm italic p-2 sm:p-3 bg-slate-50 rounded-md text-center">${(daySettings ? 'Jornada configurada, pero no hay horarios disponibles (o están cubiertos por descansos globales).' : 'No hay horarios definidos.')}</p>`;
+                 container.innerHTML = `<p class="text-slate-500 text-xs sm:text-sm italic p-2 sm:p-3 bg-slate-50 rounded-md text-center">${(weeklyDaySetting && weeklyDaySetting.active ? 'Jornada configurada, pero no hay horarios disponibles (o están cubiertos por descansos globales).' : 'No hay horarios definidos o no es día laborable.')}</p>`;
                  return;
             }
 
@@ -730,25 +895,18 @@
             const isShiftPressed = event.shiftKey;
 
             if (isShiftPressed && appData.lastSelectedDate && appData.lastSelectedDate !== dateStr) {
-                // --- Shift+Click: Range Selection ---
                 const oldSelectedDates = [...appData.selectedDates]; 
                 appData.selectedDates = []; 
-
                 const d1 = new Date(appData.lastSelectedDate + 'T00:00:00Z'); 
                 const d2 = new Date(dateStr + 'T00:00:00Z');          
-
                 const start = d1 < d2 ? d1 : d2;
                 const end = d1 < d2 ? d2 : d1;
-
                 for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
                     appData.selectedDates.push(formatDate(d));
                 }
                 addLog("Selección de Rango", `Días desde ${formatDate(start)} hasta ${formatDate(end)} seleccionados.`);
-
             } else {
-                // --- No Shift Key: Handle Ctrl+Click (Desktop) and Simple Taps (Mobile/Desktop) ---
                 const index = appData.selectedDates.indexOf(dateStr);
-
                 if (isCtrlPressed) { 
                     if (index > -1) { 
                         appData.selectedDates.splice(index, 1);
@@ -757,9 +915,7 @@
                         appData.selectedDates.push(dateStr);
                         addLog("Día Seleccionado (Ctrl/Cmd)", `Día: ${dateStr}`);
                     }
-                    appData.lastSelectedDate = dateStr; 
-
-                } else { // No modifier keys (simple tap for Mobile, or simple click for Desktop)
+                } else { // Simple tap/click
                     if (index > -1) { 
                         appData.selectedDates.splice(index, 1);
                         addLog("Día Deseleccionado (Tap)", `Día: ${dateStr}`);
@@ -767,13 +923,16 @@
                         appData.selectedDates.push(dateStr);
                         addLog("Día Seleccionado (Tap)", `Día: ${dateStr}`);
                     }
-                    appData.lastSelectedDate = dateStr;
                 }
+                appData.lastSelectedDate = dateStr; // Update last selected for Shift or next tap
             }
 
             if (appData.selectedDates.length === 0) {
                 appData.lastSelectedDate = null;
+            } else if (appData.selectedDates.length === 1) {
+                 appData.lastSelectedDate = appData.selectedDates[0]; // Ensure lastSelectedDate is the single selected day
             }
+            // If multiple days are selected by tap/ctrl, lastSelectedDate will be the last one interacted with.
 
             renderCalendar();
             updateSidePanel();
@@ -793,25 +952,40 @@
         });
 
         function saveAvailabilityFromPanel(datesToProcess) {
-            if (datesToProcess.length === 0) return;
+            if (datesToProcess.length === 0) {
+                showNotification("No hay días seleccionados para generar horarios.", "warning");
+                return;
+            }
             const type = document.getElementById('interviewTypePanel').value;
             const duration = parseInt(document.getElementById('slotDurationMinutesPanel').value);
-            const dayStart = document.getElementById('dayStartTimePanel').value;
-            const dayEnd = document.getElementById('dayEndTimePanel').value;
 
-            if (!type || !duration || !dayStart || !dayEnd) {
-                showNotification('Por favor, completa todos los campos.', 'error'); return;
+            if (!type || !duration) {
+                showNotification('Por favor, completa tipo y duración de los slots.', 'error'); return;
             }
-            const startTimeInMinutes = parseTime(dayStart);
-            const endTimeInMinutes = parseTime(dayEnd);
-            if (startTimeInMinutes >= endTimeInMinutes) {
-                showNotification('Inicio debe ser anterior a fin.', 'error'); return;
-            }
-
-            let totalSlotsGenerated = 0;
-            let logDetails = `Tipo: ${type}, Duración: ${duration}m, Jornada: ${dayStart}-${dayEnd} para día(s): ${datesToProcess.join(', ')}`;
+            
+            let daysProcessedCount = 0;
+            let totalSlotsGeneratedOverall = 0;
 
             datesToProcess.forEach(dateStr => {
+                const dayOfWeek = new Date(dateStr + 'T00:00:00Z').getDay();
+                const weeklySetting = appData.workingHours[dayOfWeek];
+
+                if (!weeklySetting || !weeklySetting.active) {
+                    addLog("Generación de Slots Omitida", `Día ${dateStr} no es laborable según horario semanal.`);
+                    return; // Skip if not a working day
+                }
+
+                const dayStart = weeklySetting.startTime;
+                const dayEnd = weeklySetting.endTime;
+                const startTimeInMinutes = parseTime(dayStart);
+                const endTimeInMinutes = parseTime(dayEnd);
+
+                if (startTimeInMinutes >= endTimeInMinutes) {
+                    addLog("Error en Horario Semanal", `Para ${dateStr}, inicio (${dayStart}) no es anterior a fin (${dayEnd}).`);
+                    return; // Skip if weekly hours are invalid
+                }
+                
+                daysProcessedCount++;
                 const slots = [];
                 let currentTimeInMinutes = startTimeInMinutes;
                 while (currentTimeInMinutes < endTimeInMinutes) {
@@ -827,18 +1001,25 @@
                     }
                     if (!isGlobalBreak) {
                          slots.push({ id: generateUUID(), startTime: formatTime(slotStart), duration: duration, interviewType: type, status: 'available' }); 
+                         totalSlotsGeneratedOverall++;
                     }
                     currentTimeInMinutes += duration;
                 }
-                appData.events[dateStr] = { type: 'slots', slots: slots, daySettings: { dayStartTime: dayStart, dayEndTime: dayEnd, slotDurationMinutes: duration }};
-                if (datesToProcess.length === 1) totalSlotsGenerated = slots.length;
+                // Store the daySettings used for generation, even if it's from weekly schedule, for consistency or future editing.
+                appData.events[dateStr] = { type: 'slots', slots: slots, daySettings: { dayStartTime: dayStart, dayEndTime: dayEnd, slotDurationMinutes: duration, interviewType: type }};
             });
             
-            addLog("Disponibilidad Guardada", logDetails);
-            if (datesToProcess.length === 1) {
-                showNotification(`Día actualizado con ${totalSlotsGenerated} horario(s).`, "success");
+            let logDetails = `Tipo: ${type}, Duración: ${duration}m. Horarios basados en config. semanal para día(s): ${datesToProcess.join(', ')}`;
+            addLog("Disponibilidad (Slots) Guardada", logDetails);
+
+            if (daysProcessedCount > 0) {
+                if (datesToProcess.length === 1) {
+                    showNotification(`Día actualizado con ${appData.events[datesToProcess[0]]?.slots.length || 0} horario(s).`, "success");
+                } else {
+                    showNotification(`${daysProcessedCount} día(s) actualizados. Total ${totalSlotsGeneratedOverall} slots.`, "success");
+                }
             } else {
-                showNotification(`${datesToProcess.length} día(s) actualizados.`, "success");
+                 showNotification("No se generaron horarios. Verifica que los días seleccionados sean laborables en el horario semanal.", "warning");
             }
             renderCalendar();
             updateSidePanel();
@@ -897,8 +1078,10 @@
             if (!appData.events[sourceDateStr] || appData.events[sourceDateStr].type !== 'slots') {
                 showNotification("No hay disponibilidad para copiar.", "error"); return;
             }
+            // We copy the specific day's generated slots and its settings (type, duration)
+            // The weekly working hours are not part of this day-specific copy/paste.
             appData.copiedDayData = JSON.parse(JSON.stringify(appData.events[sourceDateStr]));
-            addLog("Disponibilidad Copiada", `Desde: ${sourceDateStr}`);
+            addLog("Disponibilidad de Día Copiada", `Desde: ${sourceDateStr} (Tipo: ${appData.copiedDayData.daySettings.interviewType}, Dur: ${appData.copiedDayData.daySettings.slotDurationMinutes}m)`);
             showNotification(`Disponibilidad de ${new Date(sourceDateStr+'T00:00:00Z').toLocaleDateString('es-ES', {month:'short', day:'numeric'})} copiada.`, "success");
             updateSidePanel(); 
         }
@@ -909,6 +1092,10 @@
             
             let count = 0;
             targetDatesArray.forEach(dateStr => {
+                // When pasting, we are pasting the generated slots and their specific settings (type, duration)
+                // The working hours for the target day are still dictated by its weekly schedule.
+                // The pasted slots should ideally fit within the target day's working hours.
+                // For simplicity now, it just overwrites. A more advanced version might validate.
                 appData.events[dateStr] = JSON.parse(JSON.stringify(appData.copiedDayData)); 
                 if (appData.events[dateStr].slots) {
                     appData.events[dateStr].slots.forEach(slot => {
@@ -918,7 +1105,7 @@
                 }
                 count++;
             });
-            addLog("Disponibilidad Pegada", `A ${count} día(s): ${targetDatesArray.join(', ')}`);
+            addLog("Disponibilidad de Día Pegada", `A ${count} día(s): ${targetDatesArray.join(', ')} (Tipo: ${appData.copiedDayData.daySettings.interviewType}, Dur: ${appData.copiedDayData.daySettings.slotDurationMinutes}m)`);
             showNotification(`Disponibilidad pegada a ${count} día(s).`, "success");
             renderCalendar();
             updateSidePanel();
@@ -959,9 +1146,10 @@
         // --- JSON EXPORT ---
         function exportConfigurationToJson() {
             const dataToExport = {
-                version: "1.0",
+                version: "1.1", // Updated version
                 timestamp: new Date().toISOString(),
-                configuracionEventos: appData.events,
+                horarioLaboralSemanal: appData.workingHours, // Added weekly working hours
+                configuracionEventosDiarios: appData.events, // Renamed for clarity
                 descansosGlobales: appData.globalNonAvailability
             };
             const jsonString = JSON.stringify(dataToExport, null, 2); 
