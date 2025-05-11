@@ -218,33 +218,56 @@
                  <p class="mt-2 sm:mt-3 text-xs text-slate-500 text-center">Usa Shift+Click para rango, Ctrl/Cmd+Click o Tap para múltiple.</p>
             </div>
 
-            <div id="sidePanel" class="w-full md:w-1/3 lg:w-1/4 bg-white p-4 sm:p-5 rounded-xl shadow-xl self-start md:sticky md:top-6 scrollable-area">
-                <h3 id="sidePanelTitle" class="text-xl sm:text-2xl font-semibold mb-4 sm:mb-5 text-slate-700 border-b border-slate-200 pb-2 sm:pb-3">Detalles y Acciones</h3>
-                <div id="sidePanelContent" class="space-y-4 sm:space-y-5">
-                    </div>
-                
-                <div id="weeklyHoursContainer" class="mt-6 sm:mt-8 border-t border-slate-200 pt-4 sm:pt-6 p-2 border rounded-lg border-slate-200 bg-slate-50/50">
-                    <h4 class="text-base sm:text-lg font-semibold mb-3 text-slate-600 px-1">Horario Laboral Semanal</h4>
-                    <div id="weeklyWorkingHoursPanel" class="space-y-1 text-sm">
-                        </div>
-                    <button id="applyMondayToAllBtn" class="btn btn-info w-full mt-2 text-xs">Aplicar Lunes a Todos</button>
+           <div id="sidePanel" class="w-full md:w-1/3 lg:w-1/4 bg-white p-4 sm:p-5 rounded-xl shadow-xl self-start md:sticky md:top-6 scrollable-area">
+    <h3 id="sidePanelTitle" class="text-xl sm:text-2xl font-semibold mb-4 sm:mb-5 text-slate-700 border-b border-slate-200 pb-2 sm:pb-3">Detalles y Acciones</h3>
+    <div id="sidePanelContent" class="space-y-4 sm:space-y-5">
+        </div>
+    
+    <div id="weeklyHoursAccordion" class="accordion-container mt-4 sm:mt-6 border-t border-slate-200 pt-3 sm:pt-4">
+        <button class="accordion-header flex justify-between items-center w-full text-left py-2 focus:outline-none">
+            <h4 class="text-base sm:text-lg font-semibold text-slate-600">Horario Laboral Semanal</h4>
+            <span class="accordion-icon text-slate-500 transform transition-transform duration-200 text-xl font-mono">-</span>
+        </button>
+        <div class="accordion-content overflow-hidden" style="max-height: 1000px;"> <div class="pt-2 pb-1"> {/* Ajuste de padding para el contenido interno */}
+                {/* El contenido original de weeklyHoursContainer va aquí dentro */}
+                <div id="weeklyWorkingHoursPanel" class="space-y-1 text-sm p-2 border rounded-lg border-slate-200 bg-slate-50/50">
+                    {/* El JS llenará esto */}
                 </div>
+                <button id="applyMondayToAllBtn" class="btn btn-info w-full mt-3 text-xs">Aplicar Lunes a Todos</button>
+            </div>
+        </div>
+    </div>
 
-                <div id="globalBreaksContainer" class="mt-6 sm:mt-8 border-t border-slate-200 pt-4 sm:pt-6">
-                     <h4 class="text-lg font-semibold mb-3 text-slate-600">Descansos Globales</h4>
-                     <div id="globalNonAvailabilityList" class="space-y-2 sm:space-y-2.5 text-sm mb-3 sm:mb-4"></div>
-                     <div class="space-y-2.5 sm:space-y-3 p-3 bg-slate-50/50 rounded-lg border border-slate-200">
-                         <input type="time" id="globalBreakStartTime" class="w-full p-2 border border-slate-300 rounded-md text-sm" value="12:00">
-                         <input type="time" id="globalBreakEndTime" class="w-full p-2 border border-slate-300 rounded-md text-sm" value="13:00">
-                         <input type="text" id="globalBreakTitle" class="w-full p-2 border border-slate-300 rounded-md text-sm" placeholder="Ej: Almuerzo">
-                         <button id="addGlobalBreakBtn" class="btn btn-info w-full">Añadir Descanso</button>
-                     </div>
-                </div>
-                <div class="mt-6 sm:mt-8 border-t border-slate-200 pt-4 sm:pt-6">
-                    <h4 class="text-lg font-semibold mb-3 text-slate-600">Herramientas</h4>
-                    <button id="exportJsonBtn" class="btn btn-secondary w-full">Exportar Configuración (JSON)</button>
+    <div id="globalBreaksAccordion" class="accordion-container mt-4 sm:mt-6 border-t border-slate-200 pt-3 sm:pt-4">
+        <button class="accordion-header flex justify-between items-center w-full text-left py-2 focus:outline-none">
+            <h4 class="text-lg font-semibold text-slate-600">Descansos Globales</h4>
+            <span class="accordion-icon text-slate-500 transform transition-transform duration-200 text-xl font-mono">+</span>
+        </button>
+        <div class="accordion-content overflow-hidden" style="max-height: 0px;"> <div class="pt-2 pb-1"> {/* Ajuste de padding */}
+                {/* El contenido original de globalBreaksContainer va aquí dentro */}
+                <div id="globalNonAvailabilityList" class="space-y-2 sm:space-y-2.5 text-sm mb-3 sm:mb-4"></div>
+                <div class="space-y-2.5 sm:space-y-3 p-3 bg-slate-50/50 rounded-lg border border-slate-200">
+                    <input type="time" id="globalBreakStartTime" class="w-full p-2 border border-slate-300 rounded-md text-sm" value="12:00">
+                    <input type="time" id="globalBreakEndTime" class="w-full p-2 border border-slate-300 rounded-md text-sm" value="13:00">
+                    <input type="text" id="globalBreakTitle" class="w-full p-2 border border-slate-300 rounded-md text-sm" placeholder="Ej: Almuerzo">
+                    <button id="addGlobalBreakBtn" class="btn btn-info w-full">Añadir Descanso</button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div id="toolsAccordion" class="accordion-container mt-4 sm:mt-6 border-t border-slate-200 pt-3 sm:pt-4">
+        <button class="accordion-header flex justify-between items-center w-full text-left py-2 focus:outline-none">
+            <h4 class="text-lg font-semibold text-slate-600">Herramientas</h4>
+            <span class="accordion-icon text-slate-500 transform transition-transform duration-200 text-xl font-mono">+</span>
+        </button>
+        <div class="accordion-content overflow-hidden" style="max-height: 0px;"> <div class="pt-2 pb-1"> {/* Ajuste de padding */}
+                 {/* El contenido original de Herramientas va aquí dentro */}
+                <button id="exportJsonBtn" class="btn btn-secondary w-full">Exportar Configuración (JSON)</button>
+             </div>
+        </div>
+    </div>
+</div>
         </div>
 
         <div id="logsSection" class="mt-8 sm:mt-10 md:mt-12 bg-white p-4 sm:p-6 rounded-xl shadow-xl">
@@ -576,18 +599,18 @@
         }
 
         function populateTimeSelectsForWorkingHours(selectElement, defaultValue) {
-            selectElement.innerHTML = '';
-            for (let hour = 0; hour < 24; hour++) {
-                for (let minute = 0; minute < 60; minute += 15) { 
-                    const timeString = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-                    const option = document.createElement('option');
-                    option.value = timeString;
-                    option.textContent = timeString;
-                    selectElement.appendChild(option);
-                }
-            }
-            selectElement.value = defaultValue || "09:00";
+    selectElement.innerHTML = '';
+    for (let hour = 0; hour < 24; hour++) {
+        for (let minute = 0; minute < 60; minute += 30) { // Cambiado de 15 a 30
+            const timeString = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+            const option = document.createElement('option');
+            option.value = timeString;
+            option.textContent = timeString;
+            selectElement.appendChild(option);
         }
+    }
+    selectElement.value = defaultValue || "09:00";
+}
 
         function handleWorkingDayToggle(event) {
             const dayIndex = parseInt(event.target.dataset.dayIndex);
@@ -927,76 +950,63 @@ function updateCandidatesPerSlotMax() {
     const slotDuration = parseInt(slotDurationEl.value);
     let maxCandidates;
 
-    // 1. Calcular maxCandidates dinámicamente
+    // Calcular maxCandidates dinámicamente
     switch (interviewType) {
         case 'presencial':
         case 'telefónica':
             if (slotDuration === 15) maxCandidates = 4;
             else if (slotDuration === 30) maxCandidates = 8;
             else if (slotDuration === 60) maxCandidates = 16;
-            else maxCandidates = 1; // Valor por defecto para este tipo
+            else maxCandidates = 1; 
             break;
         case 'virtual':
             if (slotDuration === 15) maxCandidates = 1;
             else if (slotDuration === 30) maxCandidates = 2;
             else if (slotDuration === 60) maxCandidates = 3;
-            else maxCandidates = 1; // Valor por defecto para este tipo
+            else maxCandidates = 1; 
             break;
         case 'masiva':
             if (slotDuration === 15) maxCandidates = 20;
             else if (slotDuration === 30) maxCandidates = 40;
             else if (slotDuration === 60) maxCandidates = 80;
-            else maxCandidates = 1; // Valor por defecto para este tipo
+            else maxCandidates = 1; 
             break;
         default:
-            maxCandidates = 1; // Valor por defecto general
+            maxCandidates = 1; 
     }
 
-    // 2. Establecer los atributos min y max en el input. Esto ayuda a la validación nativa del navegador.
     candidatesInputEl.min = 1;
     candidatesInputEl.max = maxCandidates;
-    candidatesInputEl.placeholder = `Máx: ${maxCandidates}.`;
+    candidatesInputEl.placeholder = `Máx: ${maxCandidates}`; // Placeholder actualizado
 
     const currentValueString = candidatesInputEl.value;
 
-    // 3. Manejar el caso de campo vacío:
-    // Si el campo está vacío (el usuario borró el contenido), no hacemos nada inmediatamente.
-    // Esto es para permitir al usuario escribir un nuevo número sin que el script lo fuerce a "1" al instante.
-    // La validación de min="1" del navegador actuará (por ejemplo, al perder el foco o al intentar enviar el formulario).
+    // Si el campo está vacío (el usuario pudo haber borrado el contenido para escribir uno nuevo)
+    // no hacemos nada en este evento 'input'. Esto permite que el usuario termine de escribir.
     if (currentValueString === "") {
-        // No es necesario 'return;' aquí si queremos que el resto de la lógica evalúe un string vacío
-        // como NaN y lo corrija a 1. Sin embargo, para mejorar la experiencia de tipeo,
-        // podríamos querer que el campo *permanezca* vacío mientras el usuario escribe.
-        // Si en PC el navegador no permite que `value` sea `""` y lo cambia a `min` ("1")
-        // inmediatamente, esta condición `=== ""` no se cumplirá como se espera en ese escenario.
-        // Por ahora, si está vacío, no hacemos correcciones directas aquí.
-        return;
+        return; 
     }
 
-    // 4. Convertir el valor a número para validación
     let currentCandidates = parseInt(currentValueString);
 
-    // 5. Validar y corregir el valor numérico:
     if (isNaN(currentCandidates) || currentCandidates < 1) {
-        // Si no es un número parseable (ej. "abc") o es un número menor que 1 (0, -1, etc.).
-        // Se establece el valor del campo a "1".
-        // Se verifica si ya es "1" para evitar una reasignación innecesaria que podría mover el cursor.
+        // Si no es un número o es menor que 1, lo forzamos a 1.
+        // Evitar reasignar si ya es "1" para no afectar el cursor.
         if (candidatesInputEl.value !== "1") {
             candidatesInputEl.value = 1;
         }
     } else if (currentCandidates > maxCandidates) {
-        // Si el número es mayor que el máximo permitido, se ajusta al máximo.
-        // Se verifica si ya es el máximo para evitar reasignación.
+        // Si es mayor que el máximo, lo ajustamos al máximo.
+        // Evitar reasignar si ya es el valor máximo.
         const maxCandidatesString = String(maxCandidates);
         if (candidatesInputEl.value !== maxCandidatesString) {
             candidatesInputEl.value = maxCandidatesString;
         }
-        // Mostrar notificación solo si el valor ingresado originalmente era mayor.
-        if (parseInt(currentValueString) > maxCandidates) {
+        // Notificar solo si el valor original que el usuario intentó poner era realmente mayor.
+        if (parseInt(currentValueString) > maxCandidates) { 
              showNotification(`Se ajustó el número de candidatos al máximo permitido (${maxCandidates}) para esta configuración.`, "info", 4000);
         }
     }
-    // Si el valor es un número válido entre 1 y maxCandidates (inclusive), no se modifica.
 }
         
         
@@ -1453,6 +1463,51 @@ function saveAvailabilityFromPanel(datesToProcess) {
             confirmCallback = null;
         });
         
+
+        function initializeAccordions() {
+    document.querySelectorAll('.accordion-header').forEach(header => {
+        header.addEventListener('click', () => {
+            const content = header.nextElementSibling;
+            const icon = header.querySelector('.accordion-icon');
+            const isOpen = content.style.maxHeight && content.style.maxHeight !== '0px';
+
+            if (isOpen) {
+                content.style.maxHeight = '0px';
+                if (icon) {
+                    icon.textContent = '+';
+                    // Opcional: icon.classList.remove('rotate-180');
+                }
+            } else {
+                // Para la animación, necesitas que el contenido tenga una altura intrínseca
+                // o usar un valor suficientemente grande para max-height.
+                // content.scrollHeight puede ser problemático si el contenido está cambiando.
+                content.style.maxHeight = content.scrollHeight + 'px'; // O un valor fijo grande como '1000px' si el contenido es muy variable
+                if (icon) {
+                    icon.textContent = '-';
+                    // Opcional: icon.classList.add('rotate-180');
+                }
+                // Si otros acordeones deben cerrarse cuando uno se abre (comportamiento de acordeón exclusivo):
+                // document.querySelectorAll('.accordion-content').forEach(otherContent => {
+                //     if (otherContent !== content) {
+                //         otherContent.style.maxHeight = '0px';
+                //         const otherIcon = otherContent.previousElementSibling.querySelector('.accordion-icon');
+                //         if (otherIcon) otherIcon.textContent = '+';
+                //     }
+                // });
+            }
+        });
+    });
+
+    // Asegurar que el contenido de los acordeones tenga una transición suave
+    // y que el estado inicial (abierto/cerrado) se maneje.
+    document.querySelectorAll('.accordion-content').forEach(content => {
+        content.style.transition = 'max-height 0.3s ease-in-out';
+        // El estado inicial (abierto/cerrado) ya está definido en el HTML por `style="max-height: ...;"`
+    });
+}
+
+
+
         // --- JSON EXPORT ---
         function exportConfigurationToJson() {
             const dataToExport = {
@@ -1486,10 +1541,12 @@ function saveAvailabilityFromPanel(datesToProcess) {
             addGlobalBreakBtn.innerHTML = ICONS.plus + addGlobalBreakBtn.textContent;
             addGlobalBreakBtn.addEventListener('click', addGlobalBreak);
         }
-        
-        addLog("Aplicación Iniciada", `Versión del planificador cargada.`);
-        renderCalendar();
-        updateSidePanel(); 
+    
+    addLog("Aplicación Iniciada", `Versión del planificador cargada.`);
+    renderCalendar();
+    updateSidePanel(); // updateSidePanel llama a renderWeeklyWorkingHoursPanel y renderGlobalNonAvailabilityList
+    initializeAccordions(); // Llama a esto aquí
+</script>
     </script>
 </body>
 </html>
