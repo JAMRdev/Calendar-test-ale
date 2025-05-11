@@ -1,270 +1,450 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Disponibilidad</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234f46e5'%3E%3Cpath fill-rule='evenodd' d='M5.25 2.25A2.25 2.25 0 003 4.5v15A2.25 2.25 0 005.25 21.75h13.5A2.25 2.25 0 0021 19.5V4.5A2.25 2.25 0 0018.75 2.25H5.25zM9 9.75A.75.75 0 009.75 9h4.5a.75.75 0 000-1.5H9.75A.75.75 0 009 9.75zm0 3A.75.75 0 009.75 12h4.5a.75.75 0 000-1.5H9.75A.75.75 0 009 12.75zm0 3A.75.75 0 009.75 15h4.5a.75.75 0 000-1.5H9.75A.75.75 0 009 15.75z' clip-rule='evenodd' /%3E%3C/svg%3E">
+    <link rel="icon"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234f46e5'%3E%3Cpath fill-rule='evenodd' d='M5.25 2.25A2.25 2.25 0 003 4.5v15A2.25 2.25 0 005.25 21.75h13.5A2.25 2.25 0 0021 19.5V4.5A2.25 2.25 0 0018.75 2.25H5.25zM9 9.75A.75.75 0 009.75 9h4.5a.75.75 0 000-1.5H9.75A.75.75 0 009 9.75zm0 3A.75.75 0 009.75 12h4.5a.75.75 0 000-1.5H9.75A.75.75 0 009 12.75zm0 3A.75.75 0 009.75 15h4.5a.75.75 0 000-1.5H9.75A.75.75 0 009 15.75z' clip-rule='evenodd' /%3E%3C/svg%3E">
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f1f5f9; /* Tailwind slate-100 */
+            background-color: #f1f5f9;
+            /* Tailwind slate-100 */
             overflow-x: hidden;
         }
+
         .calendar-day {
-            min-height: 80px; 
+            min-height: 80px;
         }
-        @media (min-width: 640px) { /* sm breakpoint */
+
+        @media (min-width: 640px) {
+
+            /* sm breakpoint */
             .calendar-day {
                 min-height: 100px;
             }
         }
+
         .calendar-day:hover:not(.disabled-for-availability) {
-            background-color: #e0e7ff; /* indigo-100 for hover */
+            background-color: #e0e7ff;
+            /* indigo-100 for hover */
         }
+
         .calendar-day.selected {
-            background-color: #c7d2fe; 
-            border: 2px solid #4f46e5; 
+            background-color: #c7d2fe;
+            border: 2px solid #4f46e5;
             box-shadow: 0 0 0 2px #c7d2fe;
         }
+
         .calendar-day.day-off {
-            background-color: #ffe4e6; 
-            color: #be123c; 
+            background-color: #ffe4e6;
+            color: #be123c;
         }
+
         .calendar-day.day-off.selected {
-            background-color: #fecdd3; 
-            border: 2px solid #e11d48; 
+            background-color: #fecdd3;
+            border: 2px solid #e11d48;
         }
+
         .calendar-day.disabled-for-availability {
-            background-color: #f8fafc; /* slate-50 */
-            color: #94a3b8; /* slate-400 */
+            background-color: #f8fafc;
+            /* slate-50 */
+            color: #94a3b8;
+            /* slate-400 */
             cursor: not-allowed;
         }
+
         .calendar-day.disabled-for-availability:hover {
-            background-color: #f1f5f9; /* slate-100 */
+            background-color: #f1f5f9;
+            /* slate-100 */
         }
 
         .slot {
-            border: 1px solid #e2e8f0; 
-            padding: 0.5rem 0.75rem; 
-            margin-bottom: 0.5rem; 
-            border-radius: 0.5rem; 
+            border: 1px solid #e2e8f0;
+            padding: 0.5rem 0.75rem;
+            margin-bottom: 0.5rem;
+            border-radius: 0.5rem;
             transition: background-color 0.2s;
         }
-        .slot:hover {
-            background-color: #f8fafc; /* slate-50 */
-        }
-        .slot-available { background-color: #dcfce7; border-left: 4px solid #22c55e; } 
-        .slot-global-break { background-color: #eef2ff; border-left: 4px solid #64748b; color: #334155; } /* indigo-50 */
 
-        .scrollable-area::-webkit-scrollbar { width: 6px; }
-        .scrollable-area::-webkit-scrollbar-track { background: #f8fafc; border-radius: 10px; } 
-        .scrollable-area::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; } 
-        .scrollable-area::-webkit-scrollbar-thumb:hover { background: #64748b; } 
+        .slot:hover {
+            background-color: #f8fafc;
+            /* slate-50 */
+        }
+
+        .slot-available {
+            background-color: #dcfce7;
+            border-left: 4px solid #22c55e;
+        }
+
+        .slot-global-break {
+            background-color: #eef2ff;
+            border-left: 4px solid #64748b;
+            color: #334155;
+        }
+
+        /* indigo-50 */
+
+        .scrollable-area::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .scrollable-area::-webkit-scrollbar-track {
+            background: #f8fafc;
+            border-radius: 10px;
+        }
+
+        .scrollable-area::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 10px;
+        }
+
+        .scrollable-area::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
 
         #sidePanel {
-            max-height: calc(100vh - 4rem); 
-            overflow-y: auto; /* Main panel scroll */
+            max-height: calc(100vh - 4rem);
+            overflow-y: auto;
+            /* Main panel scroll */
             scrollbar-width: thin;
             scrollbar-color: #94a3b8 #f8fafc;
         }
+
         #logsDisplayContainer {
-             max-height: 250px; /* Adjusted max height for logs */
+            max-height: 250px;
+            /* Adjusted max height for logs */
         }
 
         .modal {
-            display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%;
-            overflow: auto; background-color: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center;
-            padding: 1rem; 
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
         }
+
         .modal-content {
-            background-color: #ffffff; margin: auto; padding: 1.5rem; 
-            border-radius: 0.75rem; 
-            width: 100%; 
-            max-width: 500px; 
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); 
+            background-color: #ffffff;
+            margin: auto;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         }
-        @media (min-width: 640px) { 
+
+        @media (min-width: 640px) {
             .modal-content {
-                padding: 2rem; 
+                padding: 2rem;
             }
         }
+
         #notificationArea {
-            position: fixed; top: 1rem; left: 1rem; right: 1rem; 
-            transform: none; 
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            right: 1rem;
+            transform: none;
             z-index: 1000;
-            max-width: 600px; 
+            max-width: 600px;
             margin-left: auto;
             margin-right: auto;
         }
+
         .btn {
-            padding: 0.625rem 1.25rem; /* py-2.5 px-5 */
-            border-radius: 0.5rem; 
-            font-weight: 500; 
+            padding: 0.625rem 1.25rem;
+            /* py-2.5 px-5 */
+            border-radius: 0.5rem;
+            font-weight: 500;
             transition: background-color 0.2s, box-shadow 0.2s, opacity 0.2s;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 0.5rem; 
-            line-height: 1.25rem; 
+            gap: 0.5rem;
+            line-height: 1.25rem;
         }
+
         .btn:disabled {
-            background-color: #e2e8f0; /* slate-200 */
-            color: #94a3b8; /* slate-400 */
+            background-color: #e2e8f0;
+            /* slate-200 */
+            color: #94a3b8;
+            /* slate-400 */
             cursor: not-allowed;
             box-shadow: none;
         }
-        .btn-primary { background-color: #4f46e5; color: white; } /* indigo-600 */
-        .btn-primary:hover:not(:disabled) { background-color: #4338ca; box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.39); } 
-        .btn-danger { background-color: #e11d48; color: white; } /* rose-600 */
-        .btn-danger:hover:not(:disabled) { background-color: #be123c; box-shadow: 0 4px 14px 0 rgba(225, 29, 72, 0.39); } 
-        .btn-warning { background-color: #f59e0b; color: white; } /* amber-500 */
-        .btn-warning:hover:not(:disabled) { background-color: #d97706; box-shadow: 0 4px 14px 0 rgba(245, 158, 11, 0.39); } 
-        .btn-success { background-color: #16a34a; color: white; } /* green-600 */
-        .btn-success:hover:not(:disabled) { background-color: #15803d; box-shadow: 0 4px 14px 0 rgba(22, 163, 74, 0.39); } 
-        .btn-info { background-color: #0ea5e9; color: white; } /* sky-500 */
-        .btn-info:hover:not(:disabled) { background-color: #0284c7; box-shadow: 0 4px 14px 0 rgba(14, 165, 233, 0.39); } 
-        .btn-secondary { background-color: #64748b; color: white; } /* slate-500 */
-        .btn-secondary:hover:not(:disabled) { background-color: #475569; box-shadow: 0 4px 14px 0 rgba(100, 116, 139, 0.39); } 
 
-        .icon-sm { width: 1rem; height: 1rem; } 
+        .btn-primary {
+            background-color: #4f46e5;
+            color: white;
+        }
+
+        /* indigo-600 */
+        .btn-primary:hover:not(:disabled) {
+            background-color: #4338ca;
+            box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.39);
+        }
+
+        .btn-danger {
+            background-color: #e11d48;
+            color: white;
+        }
+
+        /* rose-600 */
+        .btn-danger:hover:not(:disabled) {
+            background-color: #be123c;
+            box-shadow: 0 4px 14px 0 rgba(225, 29, 72, 0.39);
+        }
+
+        .btn-warning {
+            background-color: #f59e0b;
+            color: white;
+        }
+
+        /* amber-500 */
+        .btn-warning:hover:not(:disabled) {
+            background-color: #d97706;
+            box-shadow: 0 4px 14px 0 rgba(245, 158, 11, 0.39);
+        }
+
+        .btn-success {
+            background-color: #16a34a;
+            color: white;
+        }
+
+        /* green-600 */
+        .btn-success:hover:not(:disabled) {
+            background-color: #15803d;
+            box-shadow: 0 4px 14px 0 rgba(22, 163, 74, 0.39);
+        }
+
+        .btn-info {
+            background-color: #0ea5e9;
+            color: white;
+        }
+
+        /* sky-500 */
+        .btn-info:hover:not(:disabled) {
+            background-color: #0284c7;
+            box-shadow: 0 4px 14px 0 rgba(14, 165, 233, 0.39);
+        }
+
+        .btn-secondary {
+            background-color: #64748b;
+            color: white;
+        }
+
+        /* slate-500 */
+        .btn-secondary:hover:not(:disabled) {
+            background-color: #475569;
+            box-shadow: 0 4px 14px 0 rgba(100, 116, 139, 0.39);
+        }
+
+        .icon-sm {
+            width: 1rem;
+            height: 1rem;
+        }
+
         .log-entry {
             padding: 0.5rem 0.75rem;
-            border-bottom: 1px solid #e2e8f0; 
-            font-size: 0.8rem; 
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 0.8rem;
             line-height: 1.2;
         }
+
         .log-entry:last-child {
             border-bottom: none;
         }
+
         .log-timestamp {
-            color: #64748b; 
-            font-size: 0.7rem; 
+            color: #64748b;
+            font-size: 0.7rem;
             margin-right: 0.5rem;
         }
+
         .log-action {
-            font-weight: 500; 
-            color: #1e293b; 
+            font-weight: 500;
+            color: #1e293b;
         }
+
         .log-details {
-            color: #475569; 
+            color: #475569;
             margin-left: 0.5rem;
             word-break: break-word;
         }
+
         .working-hours-row {
             display: grid;
-            grid-template-columns: min-content auto 1fr auto 1fr; 
-            gap: 0.5rem; 
+            grid-template-columns: min-content auto 1fr auto 1fr;
+            gap: 0.5rem;
             align-items: center;
-            margin-bottom: 0.5rem; 
-            padding: 0.5rem; 
-            border-radius: 0.5rem; 
+            margin-bottom: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
         }
-         .working-hours-row .day-label {
-            font-weight: 500; 
+
+        .working-hours-row .day-label {
+            font-weight: 500;
             text-align: left;
-            min-width: 35px; 
+            min-width: 35px;
         }
+
         .working-hours-row input[type="checkbox"] {
-            width: 1rem; 
-            height: 1rem; 
-            margin-right: 0.25rem; 
-            accent-color: #4f46e5; 
+            width: 1rem;
+            height: 1rem;
+            margin-right: 0.25rem;
+            accent-color: #4f46e5;
         }
+
         .working-hours-row select {
-            padding: 0.5rem; 
-            font-size: 0.75rem; 
-            border-color: #cbd5e1; 
-            border-radius: 0.375rem; 
+            padding: 0.5rem;
+            font-size: 0.75rem;
+            border-color: #cbd5e1;
+            border-radius: 0.375rem;
             background-color: white;
-            flex: 1; 
-            min-width: 60px; 
+            flex: 1;
+            min-width: 60px;
         }
+
         .working-hours-row .time-separator {
             text-align: center;
-            color: #64748b; 
-            padding: 0 0.125rem; 
+            color: #64748b;
+            padding: 0 0.125rem;
         }
+
         .form-select:disabled {
-            background-color: #f1f5f9; 
-            color: #94a3b8; 
+            background-color: #f1f5f9;
+            color: #94a3b8;
         }
     </style>
 </head>
+
 <body class="antialiased text-slate-800">
     <div id="notificationArea"></div>
 
     <div class="container mx-auto p-2 sm:p-4 md:p-6 lg:p-8">
         <header class="mb-6 sm:mb-8 md:mb-10 text-center">
-            <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-700">Administrador de disponibilidad</h1>
+            <h1 class="text-2xl sm:text-2xl md:text-2xl font-bold text-slate-700">Administrador de disponibilidad</h1>
             <p class="text-slate-500 mt-2 sm:mt-3 text-base sm:text-lg">versión de prueba - AleM</p>
         </header>
-        
+
         <div class="flex flex-col md:flex-row gap-4 md:gap-6 lg:gap-8">
             <div class="w-full md:w-2/3 lg:w-3/4">
-                <div class="flex flex-col sm:flex-row justify-between items-center mb-4 sm:mb-6 bg-white p-3 sm:p-4 rounded-xl shadow-lg">
-                    <button id="prevMonthBtn" class="btn btn-primary w-full sm:w-auto mb-2 sm:mb-0 text-xs sm:text-sm">&lt; Mes Anterior</button>
-                    <h2 id="currentMonthYear" class="text-xl sm:text-2xl md:text-3xl font-semibold text-slate-700 order-first sm:order-none mb-2 sm:mb-0"></h2>
-                    <button id="nextMonthBtn" class="btn btn-primary w-full sm:w-auto text-xs sm:text-sm">Mes Siguiente &gt;</button>
+                <div
+                    class="flex flex-col sm:flex-row justify-between items-center mb-4 sm:mb-6 bg-white p-3 sm:p-4 rounded-xl shadow-lg">
+                    <button id="prevMonthBtn"
+                        class="btn btn-primary w-full sm:w-auto mb-2 sm:mb-0 text-xs sm:text-sm">&lt; Mes
+                        Anterior</button>
+                    <h2 id="currentMonthYear"
+                        class="text-xl sm:text-2xl md:text-3xl font-semibold text-slate-700 order-first sm:order-none mb-2 sm:mb-0">
+                    </h2>
+                    <button id="nextMonthBtn" class="btn btn-primary w-full sm:w-auto text-xs sm:text-sm">Mes Siguiente
+                        &gt;</button>
                 </div>
                 <div class="flex flex-col sm:flex-row justify-center gap-2 mb-3">
-                    <button id="selectAllVisibleBtn" class="btn btn-info text-xs px-3 py-1.5 w-full sm:w-auto">Seleccionar Visibles Futuros</button>
-                    <button id="deselectAllBtn" class="btn btn-secondary text-xs px-3 py-1.5 w-full sm:w-auto">Deseleccionar Todos</button>
+                    <button id="selectAllVisibleBtn"
+                        class="btn btn-info text-xs px-3 py-1.5 w-full sm:w-auto">Seleccionar Visibles Futuros</button>
+                    <button id="deselectAllBtn"
+                        class="btn btn-secondary text-xs px-3 py-1.5 w-full sm:w-auto">Deseleccionar Todos</button>
                 </div>
-                <div id="calendarGrid" class="grid grid-cols-7 gap-1 sm:gap-1.5 bg-white p-2 sm:p-3 rounded-xl shadow-xl">
+                <div id="calendarGrid"
+                    class="grid grid-cols-7 gap-1 sm:gap-1.5 bg-white p-2 sm:p-3 rounded-xl shadow-xl">
+                </div>
+                <p class="mt-2 sm:mt-3 text-xs text-slate-500 text-center">Usa Shift+Click para rango, Ctrl/Cmd+Click o
+                    Tap para múltiple.</p>
+            </div>
+
+            <div id="sidePanel"
+                class="w-full md:w-1/3 lg:w-1/4 bg-white p-4 sm:p-5 rounded-xl shadow-xl self-start md:sticky md:top-6 scrollable-area">
+                <h3 id="sidePanelTitle"
+                    class="text-xl sm:text-2xl font-semibold mb-4 sm:mb-5 text-slate-700 border-b border-slate-200 pb-2 sm:pb-3">
+                    Detalles y Acciones</h3>
+                <div id="sidePanelContent" class="space-y-4 sm:space-y-5">
+                </div>
+
+                <div id="weeklyHoursAccordion"
+                    class="accordion-container mt-4 sm:mt-6 border-t border-slate-200 pt-3 sm:pt-4">
+                    <button
+                        class="accordion-header flex justify-between items-center w-full text-left py-2 focus:outline-none">
+                        <h4 class="text-base sm:text-lg font-semibold text-slate-600">Horario Laboral Semanal</h4>
+                        <span
+                            class="accordion-icon text-slate-500 transform transition-transform duration-200 text-xl font-mono">-</span>
+                    </button>
+                    <div class="accordion-content overflow-hidden" style="max-height: 1000px;">
+                        <div class="pt-2 pb-1">
+                            <div id="weeklyWorkingHoursPanel"
+                                class="space-y-1 text-sm p-2 border rounded-lg border-slate-200 bg-slate-50/50">
+                                {/* El JS llenará esto */}
+                            </div>
+                            <button id="applyMondayToAllBtn" class="btn btn-info w-full mt-3 text-xs">Aplicar Lunes a
+                                Todos</button>
+                        </div>
                     </div>
-                 <p class="mt-2 sm:mt-3 text-xs text-slate-500 text-center">Usa Shift+Click para rango, Ctrl/Cmd+Click o Tap para múltiple.</p>
-            </div>
-
-           <div id="sidePanel" class="w-full md:w-1/3 lg:w-1/4 bg-white p-4 sm:p-5 rounded-xl shadow-xl self-start md:sticky md:top-6 scrollable-area">
-    <h3 id="sidePanelTitle" class="text-xl sm:text-2xl font-semibold mb-4 sm:mb-5 text-slate-700 border-b border-slate-200 pb-2 sm:pb-3">Detalles y Acciones</h3>
-    <div id="sidePanelContent" class="space-y-4 sm:space-y-5">
-        </div>
-    
-    <div id="weeklyHoursAccordion" class="accordion-container mt-4 sm:mt-6 border-t border-slate-200 pt-3 sm:pt-4">
-        <button class="accordion-header flex justify-between items-center w-full text-left py-2 focus:outline-none">
-            <h4 class="text-base sm:text-lg font-semibold text-slate-600">Horario Laboral Semanal</h4>
-            <span class="accordion-icon text-slate-500 transform transition-transform duration-200 text-xl font-mono">-</span>
-        </button>
-        <div class="accordion-content overflow-hidden" style="max-height: 1000px;"> <div class="pt-2 pb-1">
-                <div id="weeklyWorkingHoursPanel" class="space-y-1 text-sm p-2 border rounded-lg border-slate-200 bg-slate-50/50">
-                    {/* El JS llenará esto */}
                 </div>
-                <button id="applyMondayToAllBtn" class="btn btn-info w-full mt-3 text-xs">Aplicar Lunes a Todos</button>
-            </div>
-        </div>
-    </div>
 
-    <div id="globalBreaksAccordion" class="accordion-container mt-4 sm:mt-6 border-t border-slate-200 pt-3 sm:pt-4">
-        <button class="accordion-header flex justify-between items-center w-full text-left py-2 focus:outline-none">
-            <h4 class="text-lg font-semibold text-slate-600">Descansos Globales</h4>
-            <span class="accordion-icon text-slate-500 transform transition-transform duration-200 text-xl font-mono">+</span>
-        </button>
-        <div class="accordion-content overflow-hidden" style="max-height: 0px;"> <div class="pt-2 pb-1"> 
-                <div id="globalNonAvailabilityList" class="space-y-2 sm:space-y-2.5 text-sm mb-3 sm:mb-4"></div>
-                <div class="space-y-2.5 sm:space-y-3 p-3 bg-slate-50/50 rounded-lg border border-slate-200">
-                    <input type="time" id="globalBreakStartTime" class="w-full p-2 border border-slate-300 rounded-md text-sm" value="12:00">
-                    <input type="time" id="globalBreakEndTime" class="w-full p-2 border border-slate-300 rounded-md text-sm" value="13:00">
-                    <input type="text" id="globalBreakTitle" class="w-full p-2 border border-slate-300 rounded-md text-sm" placeholder="Ej: Almuerzo">
-                    <button id="addGlobalBreakBtn" class="btn btn-info w-full">Añadir Descanso</button>
+                <div id="globalBreaksAccordion"
+                    class="accordion-container mt-4 sm:mt-6 border-t border-slate-200 pt-3 sm:pt-4">
+                    <button
+                        class="accordion-header flex justify-between items-center w-full text-left py-2 focus:outline-none">
+                        <h4 class="text-lg font-semibold text-slate-600">Descansos Globales</h4>
+                        <span
+                            class="accordion-icon text-slate-500 transform transition-transform duration-200 text-xl font-mono">+</span>
+                    </button>
+                    <div class="accordion-content overflow-hidden" style="max-height: 0px;">
+                        <div class="pt-2 pb-1">
+                            <div id="globalNonAvailabilityList" class="space-y-2 sm:space-y-2.5 text-sm mb-3 sm:mb-4">
+                            </div>
+                            <div class="space-y-2.5 sm:space-y-3 p-3 bg-slate-50/50 rounded-lg border border-slate-200">
+                                <div class="mb-2">
+                                    <label for="globalBreakStartTimeSelect"
+                                        class="block text-xs font-medium text-slate-700 mb-1">Hora Inicio
+                                        Descanso:</label>
+                                    <select id="globalBreakStartTimeSelect"
+                                        class="w-full p-2 border border-slate-300 rounded-md text-sm bg-white shadow-sm focus:ring-indigo-500 focus:border-indigo-500"></select>
+                                </div>
+                                <div class="mb-2">
+                                    <label for="globalBreakEndTimeSelect"
+                                        class="block text-xs font-medium text-slate-700 mb-1">Hora Fin Descanso:</label>
+                                    <select id="globalBreakEndTimeSelect"
+                                        class="w-full p-2 border border-slate-300 rounded-md text-sm bg-white shadow-sm focus:ring-indigo-500 focus:border-indigo-500"></select>
+                                </div>
+                                <input type="text" id="globalBreakTitle"
+                                    class="w-full p-2 border border-slate-300 rounded-md text-sm"
+                                    placeholder="Ej: Almuerzo">
+                                <button id="addGlobalBreakBtn" class="btn btn-info w-full">Añadir Descanso</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="toolsAccordion"
+                    class="accordion-container mt-4 sm:mt-6 border-t border-slate-200 pt-3 sm:pt-4">
+                    <button
+                        class="accordion-header flex justify-between items-center w-full text-left py-2 focus:outline-none">
+                        <h4 class="text-lg font-semibold text-slate-600">Herramientas</h4>
+                        <span
+                            class="accordion-icon text-slate-500 transform transition-transform duration-200 text-xl font-mono">+</span>
+                    </button>
+                    <div class="accordion-content overflow-hidden" style="max-height: 0px;">
+                        <div class="pt-2 pb-1">
+                            <button id="exportJsonBtn" class="btn btn-secondary w-full">Exportar Configuración
+                                (JSON)</button>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <div id="toolsAccordion" class="accordion-container mt-4 sm:mt-6 border-t border-slate-200 pt-3 sm:pt-4">
-        <button class="accordion-header flex justify-between items-center w-full text-left py-2 focus:outline-none">
-            <h4 class="text-lg font-semibold text-slate-600">Herramientas</h4>
-            <span class="accordion-icon text-slate-500 transform transition-transform duration-200 text-xl font-mono">+</span>
-        </button>
-        <div class="accordion-content overflow-hidden" style="max-height: 0px;"> <div class="pt-2 pb-1">
-                <button id="exportJsonBtn" class="btn btn-secondary w-full">Exportar Configuración (JSON)</button>
-             </div>
-        </div>
-    </div>
-</div>
         </div>
 
         <div id="logsSection" class="mt-8 sm:mt-10 md:mt-12 bg-white p-4 sm:p-6 rounded-xl shadow-xl">
@@ -272,8 +452,9 @@
                 <h3 class="text-xl sm:text-2xl font-semibold text-slate-700">Registro de Actividad</h3>
                 <button id="clearLogsBtn" class="btn btn-warning text-xs px-3 py-1.5">Limpiar Logs</button>
             </div>
-            <div id="logsDisplayContainer" class="scrollable-area overflow-y-auto border border-slate-200 rounded-lg bg-slate-50">
-                </div>
+            <div id="logsDisplayContainer"
+                class="scrollable-area overflow-y-auto border border-slate-200 rounded-lg bg-slate-50">
+            </div>
         </div>
     </div>
 
@@ -299,17 +480,17 @@
             paste: '<svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75c0-.231-.035-.454-.1-.664M6.75 7.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V16.5" /></svg>',
             download: '<svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>'
         };
-        
+
         // --- APPLICATION STATE ---
         const appData = {
             currentDate: new Date(),
-            selectedDates: [], 
-            lastSelectedDate: null, 
-            events: {}, 
+            selectedDates: [],
+            lastSelectedDate: null,
+            events: {},
             globalNonAvailability: [
                 { id: 'gnp_lunch', start: "12:00", end: "13:00", title: "Almuerzo (Global)" }
             ],
-            workingHours: { 
+            workingHours: {
                 0: { active: false, startTime: "09:00", endTime: "17:00" }, // Domingo
                 1: { active: true, startTime: "09:00", endTime: "17:00" },  // Lunes
                 2: { active: true, startTime: "09:00", endTime: "17:00" },  // Martes
@@ -319,7 +500,7 @@
                 6: { active: false, startTime: "09:00", endTime: "17:00" }  // Sábado
             },
             copiedDayData: null,
-            logs: [] 
+            logs: []
         };
 
         // --- DOM ELEMENTS ---
@@ -343,17 +524,20 @@
         const confirmMessageEl = document.getElementById('confirmMessage');
         let confirmCallback = null;
         const notificationArea = document.getElementById('notificationArea');
+const globalBreakStartTimeSelectEl = document.getElementById('globalBreakStartTimeSelect');
+const globalBreakEndTimeSelectEl = document.getElementById('globalBreakEndTimeSelect');
+// El globalBreakTitleInput ya debería estar definido
 
         // --- LOGGING ---
         function addLog(action, details = "") {
             const timestamp = new Date();
-            const logEntry = { 
-                timestamp: timestamp.toLocaleString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit', day: '2-digit', month: '2-digit' }), 
-                action, 
-                details 
+            const logEntry = {
+                timestamp: timestamp.toLocaleString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit', day: '2-digit', month: '2-digit' }),
+                action,
+                details
             };
-            appData.logs.unshift(logEntry); 
-            if (appData.logs.length > 100) { 
+            appData.logs.unshift(logEntry);
+            if (appData.logs.length > 100) {
                 appData.logs.pop();
             }
             renderLogs();
@@ -379,7 +563,7 @@
                 logsDisplayContainer.appendChild(logEl);
             });
         }
-        
+
         clearLogsBtn.addEventListener('click', () => {
             showConfirm("Limpiar Logs", "¿Estás seguro de que quieres borrar todos los registros de actividad?", () => {
                 appData.logs = [];
@@ -400,14 +584,14 @@
             if (day.length < 2) day = '0' + day;
             return [year, month, day].join('-'); // Returns YYYY-MM-DD
         }
-        
+
         function isDateTodayOrPast(dateStr) { // dateStr is YYYY-MM-DD
             const today = new Date();
-            today.setHours(0, 0, 0, 0); 
-            
+            today.setHours(0, 0, 0, 0);
+
             const [year, month, day] = dateStr.split('-').map(Number);
             const compareDate = new Date(year, month - 1, day); // Creates date in local timezone
-            compareDate.setHours(0,0,0,0); // Ensure it's at the beginning of the day for accurate comparison
+            compareDate.setHours(0, 0, 0, 0); // Ensure it's at the beginning of the day for accurate comparison
             return compareDate <= today;
         }
 
@@ -420,15 +604,15 @@
 
         function generateUUID() { return 'slot_' + Math.random().toString(36).substr(2, 9) + Date.now(); }
         function parseTime(timeStr) { const [h, m] = timeStr.split(':').map(Number); return h * 60 + m; }
-        function formatTime(minutes) { return `${String(Math.floor(minutes/60)).padStart(2,'0')}:${String(minutes%60).padStart(2,'0')}`; }
+        function formatTime(minutes) { return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`; }
 
         function showNotification(message, type = 'info', duration = 3500) {
             const notification = document.createElement('div');
-            let bgColor = 'bg-sky-500'; 
+            let bgColor = 'bg-sky-500';
             if (type === 'success') bgColor = 'bg-green-500';
             else if (type === 'error') bgColor = 'bg-rose-500';
             else if (type === 'warning') bgColor = 'bg-amber-500';
-            
+
             notification.className = `p-3 rounded-lg shadow-lg text-white text-sm mb-2 ${bgColor}`;
             notification.textContent = message;
             notificationArea.appendChild(notification);
@@ -438,7 +622,7 @@
                 setTimeout(() => notification.remove(), 500);
             }, duration);
         }
-        
+
         // --- CALENDAR RENDERING ---
         function renderCalendar() {
             calendarGrid.innerHTML = '';
@@ -467,14 +651,14 @@
                 const dayCell = document.createElement('div');
                 const currentDateObj = new Date(year, month, day); // Local date object for this day
                 const dateStr = formatDate(currentDateObj); // YYYY-MM-DD string
-                
+
                 dayCell.className = 'calendar-day border border-slate-200 p-1.5 sm:p-2 cursor-pointer flex flex-col items-center justify-start relative text-xs rounded-md';
-                
+
                 if (isDateTodayOrPast(dateStr)) {
                     dayCell.classList.add('disabled-for-availability');
                     dayCell.title = "No se puede generar disponibilidad para días pasados o el actual.";
                 } else {
-                     if (formatDate(new Date()) === dateStr && !appData.selectedDates.includes(dateStr) && (!appData.events[dateStr] || appData.events[dateStr].type !== 'day-off')) {
+                    if (formatDate(new Date()) === dateStr && !appData.selectedDates.includes(dateStr) && (!appData.events[dateStr] || appData.events[dateStr].type !== 'day-off')) {
                         dayCell.classList.add('bg-indigo-50'); // Highlight today if not selected and not a day-off
                     }
                 }
@@ -494,20 +678,20 @@
                     if (appData.events[dateStr].type === 'day-off') {
                         dayCell.classList.add('day-off');
                         const dayOffIndicator = document.createElement('span');
-                        dayOffIndicator.className = 'text-xxs sm:text-xs font-medium text-rose-600 block'; 
+                        dayOffIndicator.className = 'text-xxs sm:text-xs font-medium text-rose-600 block';
                         dayOffIndicator.textContent = 'LIBRE';
                         eventInfoContainer.appendChild(dayOffIndicator);
                     } else if (appData.events[dateStr].type === 'slots' && appData.events[dateStr].slots.length > 0) {
                         const availableSlots = appData.events[dateStr].slots.filter(s => s.status === 'available').length;
                         if (availableSlots > 0) {
-                             const availableText = document.createElement('span');
+                            const availableText = document.createElement('span');
                             availableText.className = 'text-xxs sm:text-xs text-green-600 block';
                             availableText.textContent = `${availableSlots} disp.`;
                             eventInfoContainer.appendChild(availableText);
-                        } else if (appData.events[dateStr].slots.length > 0) { 
+                        } else if (appData.events[dateStr].slots.length > 0) {
                             const configuredIndicator = document.createElement('span');
                             configuredIndicator.className = 'text-xxs sm:text-xs text-slate-500 block';
-                            configuredIndicator.textContent = 'Config.'; 
+                            configuredIndicator.textContent = 'Config.';
                             eventInfoContainer.appendChild(configuredIndicator);
                         }
                     }
@@ -525,9 +709,9 @@
 
         // --- SIDE PANEL LOGIC ---
         function updateSidePanel() {
-            renderWeeklyWorkingHoursPanel(); 
-            renderGlobalNonAvailabilityList(); 
-            sidePanelContent.innerHTML = ''; 
+            renderWeeklyWorkingHoursPanel();
+            renderGlobalNonAvailabilityList();
+            sidePanelContent.innerHTML = '';
 
             if (appData.selectedDates.length === 0) {
                 sidePanelTitle.textContent = 'Detalles y Acciones';
@@ -542,7 +726,7 @@
                 renderMultiDayPanel();
             }
         }
-        
+
         // --- WEEKLY WORKING HOURS PANEL ---
         function renderWeeklyWorkingHoursPanel() {
             if (!weeklyWorkingHoursPanelEl) return;
@@ -553,7 +737,7 @@
                 const dayConfig = appData.workingHours[index];
                 const row = document.createElement('div');
                 row.className = 'working-hours-row items-center bg-slate-50 even:bg-slate-100';
-                
+
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.checked = dayConfig.active;
@@ -562,9 +746,9 @@
                 checkbox.addEventListener('change', handleWorkingDayToggle);
 
                 const dayLabel = document.createElement('span');
-                dayLabel.textContent = dayName.substring(0,3) + "."; 
+                dayLabel.textContent = dayName.substring(0, 3) + ".";
                 dayLabel.className = 'day-label text-xs text-slate-700';
-                                        
+
                 const startTimeSelect = document.createElement('select');
                 startTimeSelect.dataset.dayIndex = index;
                 startTimeSelect.dataset.type = 'start';
@@ -576,7 +760,7 @@
                 const toLabel = document.createElement('span');
                 toLabel.textContent = 'a';
                 toLabel.className = 'time-separator text-slate-500 text-xs';
-                
+
                 const endTimeSelect = document.createElement('select');
                 endTimeSelect.dataset.dayIndex = index;
                 endTimeSelect.dataset.type = 'end';
@@ -584,42 +768,42 @@
                 populateTimeSelectsForWorkingHours(endTimeSelect, dayConfig.endTime);
                 endTimeSelect.disabled = !dayConfig.active;
                 endTimeSelect.addEventListener('change', handleWorkingTimeChange);
-                
+
                 row.appendChild(checkbox);
                 row.appendChild(dayLabel);
                 row.appendChild(startTimeSelect);
                 row.appendChild(toLabel);
                 row.appendChild(endTimeSelect);
-                
+
                 weeklyWorkingHoursPanelEl.appendChild(row);
             });
         }
 
         function populateTimeSelectsForWorkingHours(selectElement, defaultValue) {
-    selectElement.innerHTML = '';
-    for (let hour = 0; hour < 24; hour++) {
-        for (let minute = 0; minute < 60; minute += 30) { // Cambiado de 15 a 30
-            const timeString = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-            const option = document.createElement('option');
-            option.value = timeString;
-            option.textContent = timeString;
-            selectElement.appendChild(option);
+            selectElement.innerHTML = '';
+            for (let hour = 0; hour < 24; hour++) {
+                for (let minute = 0; minute < 60; minute += 30) { // Cambiado de 15 a 30
+                    const timeString = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                    const option = document.createElement('option');
+                    option.value = timeString;
+                    option.textContent = timeString;
+                    selectElement.appendChild(option);
+                }
+            }
+            selectElement.value = defaultValue || "09:00";
         }
-    }
-    selectElement.value = defaultValue || "09:00";
-}
 
         function handleWorkingDayToggle(event) {
             const dayIndex = parseInt(event.target.dataset.dayIndex);
             const isActive = event.target.checked;
             appData.workingHours[dayIndex].active = isActive;
             addLog("Horario Semanal Modificado", `Día ${getDayName(dayIndex)} ${isActive ? 'activado' : 'desactivado'}.`);
-            renderWeeklyWorkingHoursPanel(); 
+            renderWeeklyWorkingHoursPanel();
         }
 
         function handleWorkingTimeChange(event) {
             const dayIndex = parseInt(event.target.dataset.dayIndex);
-            const type = event.target.dataset.type; 
+            const type = event.target.dataset.type;
             const newTime = event.target.value;
 
             if (type === 'start') {
@@ -633,13 +817,13 @@
             }
             addLog("Horario Semanal Modificado", `Día ${getDayName(dayIndex)} - ${type === 'start' ? 'Inicio' : 'Fin'}: ${newTime}`);
         }
-        
+
         applyMondayToAllBtn.addEventListener('click', () => {
-            const mondayConfig = appData.workingHours[1]; 
+            const mondayConfig = appData.workingHours[1];
             if (!mondayConfig) return;
 
             showConfirm("Aplicar Lunes a Todos", "¿Copiar horario del Lunes a todos los demás días laborables (Martes a Viernes)? Domingo y Sábado no se modificarán.", () => {
-                for (let i = 2; i <= 5; i++) { 
+                for (let i = 2; i <= 5; i++) {
                     appData.workingHours[i].active = mondayConfig.active;
                     appData.workingHours[i].startTime = mondayConfig.startTime;
                     appData.workingHours[i].endTime = mondayConfig.endTime;
@@ -664,7 +848,7 @@
             }
             appData.globalNonAvailability.forEach(breakItem => {
                 const itemEl = document.createElement('div');
-                itemEl.className = 'flex justify-between items-center p-2 bg-slate-100 rounded-md shadow-sm'; 
+                itemEl.className = 'flex justify-between items-center p-2 bg-slate-100 rounded-md shadow-sm';
                 itemEl.innerHTML = `
                     <div>
                         <span class="font-medium text-slate-700 text-sm">${breakItem.title}</span>
@@ -675,42 +859,61 @@
                     </button>`;
                 globalNonAvailabilityListEl.appendChild(itemEl);
             });
-             document.querySelectorAll('.remove-global-break-btn').forEach(btn => {
-                btn.removeEventListener('click', handleRemoveGlobalBreak); 
+            document.querySelectorAll('.remove-global-break-btn').forEach(btn => {
+                btn.removeEventListener('click', handleRemoveGlobalBreak);
                 btn.addEventListener('click', handleRemoveGlobalBreak);
             });
         }
-        
+
         function handleRemoveGlobalBreak(e) {
             removeGlobalBreak(e.currentTarget.dataset.id);
         }
 
-        function addGlobalBreak() {
-            const startInput = document.getElementById('globalBreakStartTime');
-            const endInput = document.getElementById('globalBreakEndTime');
-            const titleInput = document.getElementById('globalBreakTitle');
-            const start = startInput.value;
-            const end = endInput.value;
-            const title = titleInput.value.trim() || 'Descanso';
+function addGlobalBreak() {
+    const start = globalBreakStartTimeSelectEl.value; // Leer del nuevo select
+    const end = globalBreakEndTimeSelectEl.value;     // Leer del nuevo select
+    const titleInput = document.getElementById('globalBreakTitle');
+    const title = titleInput.value.trim() || 'Descanso';
 
-            if (!start || !end ) {
-                 showNotification("Por favor, especifica hora de inicio y fin para el descanso global.", "error"); return;
-            }
-            if (parseTime(start) >= parseTime(end)) {
-                showNotification("La hora de inicio debe ser anterior a la de fin para el descanso global.", "error"); return;
-            }
-            appData.globalNonAvailability.push({ id: 'gnb_' + Date.now(), start, end, title });
-            addLog("Descanso Global Añadido", `Título: ${title}, Horario: ${start} - ${end}`);
-            renderGlobalNonAvailabilityList(); 
-            showNotification(`Descanso global "${title}" añadido.`, "success");
-            startInput.value = "12:00"; 
-            endInput.value = "13:00";
-            titleInput.value = "";
-            renderCalendar(); 
-            if(appData.selectedDates.length > 0) { 
-                updateSidePanel(); 
-            }
+    if (!start || !end ) {
+        showNotification("Por favor, especifica hora de inicio y fin para el descanso global.", "error"); return;
+    }
+    if (parseTime(start) >= parseTime(end)) {
+        // Permitir que un descanso cruce la medianoche (ej: 23:00 - 00:30)
+        // parseTime("23:00") es 1380, parseTime("00:30") es 30. 1380 >= 30 es true.
+        // Necesitamos una lógica que entienda el cruce de medianoche si parseTime(end) < parseTime(start)
+        let startMinutes = parseTime(start);
+        let endMinutes = parseTime(end);
+
+        // Si endMinutes es menor que startMinutes, asumimos que cruzó la medianoche.
+        // Esta validación es para asegurar que el periodo de descanso no sea negativo o cero en el mismo día.
+        if (endMinutes <= startMinutes && !(endMinutes < parseTime("06:00") && startMinutes > parseTime("18:00"))) {
+             // La segunda condición es para permitir el cruce normal (ej. 23:00 a 01:00).
+             // Si no es un cruce de medianoche válido (ej. 14:00 a 13:30), entonces es un error.
+            showNotification("La hora de fin debe ser posterior a la de inicio para el descanso global.", "error"); 
+            return;
         }
+    }
+    appData.globalNonAvailability.push({ id: 'gnb_' + Date.now(), start, end, title });
+    addLog("Descanso Global Añadido", `Título: ${title}, Horario: ${start} - ${end}`);
+    renderGlobalNonAvailabilityList(); 
+    showNotification(`Descanso global "${title}" añadido.`, "success");
+    
+    // Resetear los selects y el título
+    globalBreakStartTimeSelectEl.value = "12:00"; 
+    // Disparar el evento change para que la hora de fin se actualice automáticamente a 13:00
+    if (globalBreakStartTimeSelectEl.dispatchEvent) { // Comprobación para navegadores más antiguos / entornos de prueba
+        globalBreakStartTimeSelectEl.dispatchEvent(new Event('change', { 'bubbles': true }));
+    } else { // Fallback si dispatchEvent no está o no funciona como se espera
+        handleGlobalBreakStartTimeChange();
+    }
+    titleInput.value = "";
+    
+    renderCalendar(); 
+    if(appData.selectedDates.length > 0) { 
+        updateSidePanel(); 
+    }
+}
 
         function removeGlobalBreak(idToRemove) {
             const breakItem = appData.globalNonAvailability.find(b => b.id === idToRemove);
@@ -718,10 +921,10 @@
             showConfirm(`Eliminar "${breakItem.title}"`, `¿Seguro que quieres eliminar el descanso global "${breakItem.title}" (${breakItem.start} - ${breakItem.end})?`, () => {
                 appData.globalNonAvailability = appData.globalNonAvailability.filter(b => b.id !== idToRemove);
                 addLog("Descanso Global Eliminado", `Título: ${breakItem.title}, Horario: ${breakItem.start} - ${breakItem.end}`);
-                renderGlobalNonAvailabilityList(); 
+                renderGlobalNonAvailabilityList();
                 showNotification(`Descanso global "${breakItem.title}" eliminado.`, "success");
                 renderCalendar();
-                 if(appData.selectedDates.length > 0) {
+                if (appData.selectedDates.length > 0) {
                     updateSidePanel();
                 }
             });
@@ -732,16 +935,16 @@
             const dayIsPastOrToday = isDateTodayOrPast(dateStr);
             let canGenerateSlots = !dayIsPastOrToday;
             const localDate = getLocalDateFromStr(dateStr);
-            const dayOfWeek = localDate.getDay(); 
+            const dayOfWeek = localDate.getDay();
             const weeklySetting = appData.workingHours[dayOfWeek];
 
             let formMessage = "";
             if (dayIsPastOrToday) {
                 formMessage = `<p class="text-xs text-amber-600 bg-amber-100 p-2 rounded-md mb-3">No se puede generar disponibilidad para días pasados o el actual.</p>`;
-            } else if (!weeklySetting.active && !eventData?.daySettings) { 
+            } else if (!weeklySetting.active && !eventData?.daySettings) {
                 formMessage = `<p class="text-xs text-amber-600 bg-amber-100 p-2 rounded-md mb-3">Este día no es laborable según el horario semanal. Actívalo en "Horario Laboral Semanal" o define un horario personalizado abajo.</p>`;
             }
-            
+
             let contentHTML = `<div>${formMessage}${getAvailabilityFormHTML(dateStr, eventData, false, !canGenerateSlots)}</div>`;
 
 
@@ -753,15 +956,15 @@
                 }
             } else {
                 if (weeklySetting && weeklySetting.active && canGenerateSlots) {
-                     contentHTML += `<p class="text-slate-500 my-3 sm:my-4 text-sm italic">Día laborable (${weeklySetting.startTime} - ${weeklySetting.endTime}). Define tipo/duración y horario personalizado (opcional) para generar slots.</p>`;
+                    contentHTML += `<p class="text-slate-500 my-3 sm:my-4 text-sm italic">Día laborable (${weeklySetting.startTime} - ${weeklySetting.endTime}). Define tipo/duración y horario personalizado (opcional) para generar slots.</p>`;
                 } else if (!canGenerateSlots) {
                     // Message handled by formMessage
                 }
-                 else { 
+                else {
                     contentHTML += `<p class="text-slate-500 my-3 sm:my-4 text-sm italic">Define un horario personalizado y slots para este día.</p>`;
                 }
             }
-            
+
             contentHTML += `
                 <div class="mt-4 sm:mt-6 space-y-2 border-t border-slate-200 pt-3 sm:pt-5">
                     <button id="markDayOffBtn" class="btn btn-danger w-full">${ICONS.calendarOff} Marcar Día Libre</button>
@@ -772,8 +975,8 @@
                 </div>`;
 
             sidePanelContent.innerHTML = contentHTML;
-            
-            const slotDurationPanel = document.getElementById('slotDurationMinutesPanel'); 
+
+            const slotDurationPanel = document.getElementById('slotDurationMinutesPanel');
             const dayStartTimePanel = document.getElementById('dayCustomStartTimePanel');
             const dayEndTimePanel = document.getElementById('dayCustomEndTimePanel');
             const candidatesPerSlotInput = document.getElementById('candidatesPerSlotPanel');
@@ -784,9 +987,9 @@
             const defaultEndTime = currentDaySettings?.dayEndTime || weeklySetting.endTime;
             const defaultCandidates = currentDaySettings?.candidatesPerSlot || 1;
 
-            populateTimeSelectsForWorkingHours(dayStartTimePanel, defaultStartTime); 
+            populateTimeSelectsForWorkingHours(dayStartTimePanel, defaultStartTime);
             populateTimeSelectsForWorkingHours(dayEndTimePanel, defaultEndTime);
-            if(candidatesPerSlotInput) candidatesPerSlotInput.value = defaultCandidates;
+            if (candidatesPerSlotInput) candidatesPerSlotInput.value = defaultCandidates;
 
 
             document.getElementById('saveAvailabilityBtnPanel').addEventListener('click', () => saveAvailabilityFromPanel([dateStr]));
@@ -795,7 +998,7 @@
             if (document.getElementById('clearDaySlotsBtn')) document.getElementById('clearDaySlotsBtn').addEventListener('click', () => clearSlotsForDays([dateStr]));
             if (document.getElementById('copyDayAvailabilityBtn')) document.getElementById('copyDayAvailabilityBtn').addEventListener('click', () => copyDayAvailability(dateStr));
             if (document.getElementById('pasteDayAvailabilityBtn')) document.getElementById('pasteDayAvailabilityBtn').addEventListener('click', () => pasteDayAvailability([dateStr]));
-            
+
             const interviewTypePanel = document.getElementById('interviewTypePanel');
             if (interviewTypePanel) {
                 interviewTypePanel.addEventListener('change', updateCandidatesPerSlotMax);
@@ -804,11 +1007,11 @@
                 btn.addEventListener('click', () => {
                     document.querySelectorAll('.duration-btn-panel').forEach(b => b.classList.remove('bg-indigo-200', 'text-indigo-800', 'font-semibold'));
                     btn.classList.add('bg-indigo-200', 'text-indigo-800', 'font-semibold');
-                    if(slotDurationPanel) slotDurationPanel.value = btn.dataset.duration;
+                    if (slotDurationPanel) slotDurationPanel.value = btn.dataset.duration;
                     updateCandidatesPerSlotMax();
                 });
             });
-            if(candidatesPerSlotInput) {
+            if (candidatesPerSlotInput) {
                 candidatesPerSlotInput.addEventListener('input', updateCandidatesPerSlotMax); // To validate as user types
             }
 
@@ -818,12 +1021,12 @@
                 renderSlotsInPanel(dateStr, document.getElementById('slotListContainer'));
             }
         }
-        
+
         function renderMultiDayPanel() {
             const firstSelectedDate = appData.selectedDates[0];
             const firstDayEvent = appData.events[firstSelectedDate];
             const localDate = getLocalDateFromStr(firstSelectedDate);
-            const dayOfWeek = localDate.getDay(); 
+            const dayOfWeek = localDate.getDay();
             const weeklySetting = appData.workingHours[dayOfWeek];
 
 
@@ -842,20 +1045,20 @@
                     <button id="clearSelectedDaysSlotsBtn" class="btn btn-warning w-full">${ICONS.trash} Eliminar Horarios</button>
                     ${appData.copiedDayData ? `<button id="pasteDayAvailabilityToSelectedBtn" class="btn btn-info w-full">${ICONS.paste} Pegar a ${appData.selectedDates.length} Días</button>` : ''}
                 </div>`;
-            sidePanelContent.innerHTML = contentHTML; 
+            sidePanelContent.innerHTML = contentHTML;
 
             const slotDurationPanel = document.getElementById('slotDurationMinutesPanel');
             const dayStartTimePanel = document.getElementById('dayCustomStartTimePanel');
             const dayEndTimePanel = document.getElementById('dayCustomEndTimePanel');
             const candidatesPerSlotInput = document.getElementById('candidatesPerSlotPanel');
-            
+
             const defaultStartTime = firstDayEvent?.daySettings?.dayStartTime || weeklySetting.startTime;
             const defaultEndTime = firstDayEvent?.daySettings?.dayEndTime || weeklySetting.endTime;
             const defaultCandidates = firstDayEvent?.daySettings?.candidatesPerSlot || 1;
 
             populateTimeSelectsForWorkingHours(dayStartTimePanel, defaultStartTime);
             populateTimeSelectsForWorkingHours(dayEndTimePanel, defaultEndTime);
-            if(candidatesPerSlotInput) candidatesPerSlotInput.value = defaultCandidates;
+            if (candidatesPerSlotInput) candidatesPerSlotInput.value = defaultCandidates;
 
 
             document.getElementById('saveAvailabilityBtnPanel').addEventListener('click', () => saveAvailabilityFromPanel(appData.selectedDates));
@@ -864,10 +1067,10 @@
             document.getElementById('clearSelectedDaysSlotsBtn').addEventListener('click', () => clearSlotsForDays(appData.selectedDates));
             if (document.getElementById('pasteDayAvailabilityToSelectedBtn')) {
                 document.getElementById('pasteDayAvailabilityToSelectedBtn').disabled = someDateIsPastOrToday;
-                if(someDateIsPastOrToday) document.getElementById('pasteDayAvailabilityToSelectedBtn').title = "No se puede pegar en días pasados o el actual.";
+                if (someDateIsPastOrToday) document.getElementById('pasteDayAvailabilityToSelectedBtn').title = "No se puede pegar en días pasados o el actual.";
                 document.getElementById('pasteDayAvailabilityToSelectedBtn').addEventListener('click', () => pasteDayAvailability(appData.selectedDates));
             }
-            
+
             const interviewTypePanel = document.getElementById('interviewTypePanel');
             if (interviewTypePanel) {
                 interviewTypePanel.addEventListener('change', updateCandidatesPerSlotMax);
@@ -876,18 +1079,18 @@
                 btn.addEventListener('click', () => {
                     document.querySelectorAll('.duration-btn-panel').forEach(b => b.classList.remove('bg-indigo-200', 'text-indigo-800', 'font-semibold'));
                     btn.classList.add('bg-indigo-200', 'text-indigo-800', 'font-semibold');
-                    if(slotDurationPanel) slotDurationPanel.value = btn.dataset.duration;
+                    if (slotDurationPanel) slotDurationPanel.value = btn.dataset.duration;
                     updateCandidatesPerSlotMax();
                 });
             });
-             if(candidatesPerSlotInput) {
+            if (candidatesPerSlotInput) {
                 candidatesPerSlotInput.addEventListener('input', updateCandidatesPerSlotMax);
             }
             updateCandidatesPerSlotMax(); // Initial call
         }
 
         function getAvailabilityFormHTML(dateStr, eventData, isMultiDay = false, disableGenerateButton = false) {
-            const defaultDuration = eventData?.daySettings?.slotDurationMinutes || "30"; 
+            const defaultDuration = eventData?.daySettings?.slotDurationMinutes || "30";
             const defaultInterviewType = eventData?.daySettings?.interviewType || "virtual";
             const defaultCandidatesPerSlot = eventData?.daySettings?.candidatesPerSlot || 1;
 
@@ -934,79 +1137,79 @@
                 </div>`;
         }
 
-function updateCandidatesPerSlotMax() {
-    const interviewTypeEl = document.getElementById('interviewTypePanel');
-    const slotDurationEl = document.getElementById('slotDurationMinutesPanel');
-    const candidatesInputEl = document.getElementById('candidatesPerSlotPanel');
+        function updateCandidatesPerSlotMax() {
+            const interviewTypeEl = document.getElementById('interviewTypePanel');
+            const slotDurationEl = document.getElementById('slotDurationMinutesPanel');
+            const candidatesInputEl = document.getElementById('candidatesPerSlotPanel');
 
-    if (!interviewTypeEl || !slotDurationEl || !candidatesInputEl) {
-        return;
-    }
+            if (!interviewTypeEl || !slotDurationEl || !candidatesInputEl) {
+                return;
+            }
 
-    const interviewType = interviewTypeEl.value;
-    const slotDuration = parseInt(slotDurationEl.value);
-    let maxCandidates;
+            const interviewType = interviewTypeEl.value;
+            const slotDuration = parseInt(slotDurationEl.value);
+            let maxCandidates;
 
-    // Calcular maxCandidates dinámicamente
-    switch (interviewType) {
-        case 'presencial':
-        case 'telefónica':
-            if (slotDuration === 15) maxCandidates = 4;
-            else if (slotDuration === 30) maxCandidates = 8;
-            else if (slotDuration === 60) maxCandidates = 16;
-            else maxCandidates = 1; 
-            break;
-        case 'virtual':
-            if (slotDuration === 15) maxCandidates = 1;
-            else if (slotDuration === 30) maxCandidates = 2;
-            else if (slotDuration === 60) maxCandidates = 3;
-            else maxCandidates = 1; 
-            break;
-        case 'masiva':
-            if (slotDuration === 15) maxCandidates = 20;
-            else if (slotDuration === 30) maxCandidates = 40;
-            else if (slotDuration === 60) maxCandidates = 80;
-            else maxCandidates = 1; 
-            break;
-        default:
-            maxCandidates = 1; 
-    }
+            // Calcular maxCandidates dinámicamente
+            switch (interviewType) {
+                case 'presencial':
+                case 'telefónica':
+                    if (slotDuration === 15) maxCandidates = 4;
+                    else if (slotDuration === 30) maxCandidates = 8;
+                    else if (slotDuration === 60) maxCandidates = 16;
+                    else maxCandidates = 1;
+                    break;
+                case 'virtual':
+                    if (slotDuration === 15) maxCandidates = 1;
+                    else if (slotDuration === 30) maxCandidates = 2;
+                    else if (slotDuration === 60) maxCandidates = 3;
+                    else maxCandidates = 1;
+                    break;
+                case 'masiva':
+                    if (slotDuration === 15) maxCandidates = 20;
+                    else if (slotDuration === 30) maxCandidates = 40;
+                    else if (slotDuration === 60) maxCandidates = 80;
+                    else maxCandidates = 1;
+                    break;
+                default:
+                    maxCandidates = 1;
+            }
 
-    candidatesInputEl.min = 1;
-    candidatesInputEl.max = maxCandidates;
-    candidatesInputEl.placeholder = `Máx: ${maxCandidates}`; // Placeholder actualizado
+            candidatesInputEl.min = 1;
+            candidatesInputEl.max = maxCandidates;
+            candidatesInputEl.placeholder = `Máx: ${maxCandidates}`; // Placeholder actualizado
 
-    const currentValueString = candidatesInputEl.value;
+            const currentValueString = candidatesInputEl.value;
 
-    // Si el campo está vacío (el usuario pudo haber borrado el contenido para escribir uno nuevo)
-    // no hacemos nada en este evento 'input'. Esto permite que el usuario termine de escribir.
-    if (currentValueString === "") {
-        return; 
-    }
+            // Si el campo está vacío (el usuario pudo haber borrado el contenido para escribir uno nuevo)
+            // no hacemos nada en este evento 'input'. Esto permite que el usuario termine de escribir.
+            if (currentValueString === "") {
+                return;
+            }
 
-    let currentCandidates = parseInt(currentValueString);
+            let currentCandidates = parseInt(currentValueString);
 
-    if (isNaN(currentCandidates) || currentCandidates < 1) {
-        // Si no es un número o es menor que 1, lo forzamos a 1.
-        // Evitar reasignar si ya es "1" para no afectar el cursor.
-        if (candidatesInputEl.value !== "1") {
-            candidatesInputEl.value = 1;
+            if (isNaN(currentCandidates) || currentCandidates < 1) {
+                // Si no es un número o es menor que 1, lo forzamos a 1.
+                // Evitar reasignar si ya es "1" para no afectar el cursor.
+                if (candidatesInputEl.value !== "1") {
+                    candidatesInputEl.value = 1;
+                }
+            } else if (currentCandidates > maxCandidates) {
+                // Si es mayor que el máximo, lo ajustamos al máximo.
+                // Evitar reasignar si ya es el valor máximo.
+                const maxCandidatesString = String(maxCandidates);
+                if (candidatesInputEl.value !== maxCandidatesString) {
+                    candidatesInputEl.value = maxCandidatesString;
+                }
+                // Notificar solo si el valor original que el usuario intentó poner era realmente mayor.
+                if (parseInt(currentValueString) > maxCandidates) {
+                    showNotification(`Se ajustó el número de candidatos al máximo permitido (${maxCandidates}) para esta configuración.`, "info", 4000);
+                }
+            }
         }
-    } else if (currentCandidates > maxCandidates) {
-        // Si es mayor que el máximo, lo ajustamos al máximo.
-        // Evitar reasignar si ya es el valor máximo.
-        const maxCandidatesString = String(maxCandidates);
-        if (candidatesInputEl.value !== maxCandidatesString) {
-            candidatesInputEl.value = maxCandidatesString;
-        }
-        // Notificar solo si el valor original que el usuario intentó poner era realmente mayor.
-        if (parseInt(currentValueString) > maxCandidates) { 
-             showNotification(`Se ajustó el número de candidatos al máximo permitido (${maxCandidates}) para esta configuración.`, "info", 4000);
-        }
-    }
-}
-        
-        
+
+
         function renderSlotsInPanel(dateStr, container) {
             if (!container) return;
             container.innerHTML = '';
@@ -1014,26 +1217,26 @@ function updateCandidatesPerSlotMax() {
             const displayItems = [];
 
             if (eventData && eventData.type === 'slots') {
-                eventData.slots.forEach(slot => displayItems.push({...slot, itemType: 'slot', status: 'available'})); 
+                eventData.slots.forEach(slot => displayItems.push({ ...slot, itemType: 'slot', status: 'available' }));
             }
 
             const localDate = getLocalDateFromStr(dateStr);
             const dayOfWeek = localDate.getDay();
             const weeklyDaySetting = appData.workingHours[dayOfWeek];
-            const daySpecificSetting = eventData?.daySettings; 
+            const daySpecificSetting = eventData?.daySettings;
 
             const effectiveStartTime = daySpecificSetting?.dayStartTime || (weeklyDaySetting?.active ? weeklyDaySetting.startTime : null);
             const effectiveEndTime = daySpecificSetting?.dayEndTime || (weeklyDaySetting?.active ? weeklyDaySetting.endTime : null);
 
 
-            if (effectiveStartTime && effectiveEndTime) { 
+            if (effectiveStartTime && effectiveEndTime) {
                 appData.globalNonAvailability.forEach(breakItem => {
                     const breakStartMins = parseTime(breakItem.start);
                     const breakEndMins = parseTime(breakItem.end);
                     const dayStartMins = parseTime(effectiveStartTime);
                     const dayEndMins = parseTime(effectiveEndTime);
                     if (Math.max(dayStartMins, breakStartMins) < Math.min(dayEndMins, breakEndMins)) {
-                         displayItems.push({ itemType: 'globalBreak', startTime: breakItem.start, endTime: breakItem.end, title: breakItem.title, id: breakItem.id });
+                        displayItems.push({ itemType: 'globalBreak', startTime: breakItem.start, endTime: breakItem.end, title: breakItem.title, id: breakItem.id });
                     }
                 });
             }
@@ -1042,8 +1245,8 @@ function updateCandidatesPerSlotMax() {
             displayItems.sort((a, b) => parseTime(a.startTime) - parseTime(b.startTime));
 
             if (displayItems.length === 0) {
-                 container.innerHTML = `<p class="text-slate-500 text-xs sm:text-sm italic p-2 sm:p-3 bg-slate-50 rounded-md text-center">${(effectiveStartTime ? 'Jornada configurada, pero no hay horarios disponibles (o están cubiertos por descansos globales).' : 'No hay horarios definidos o no es día laborable.')}</p>`;
-                 return;
+                container.innerHTML = `<p class="text-slate-500 text-xs sm:text-sm italic p-2 sm:p-3 bg-slate-50 rounded-md text-center">${(effectiveStartTime ? 'Jornada configurada, pero no hay horarios disponibles (o están cubiertos por descansos globales).' : 'No hay horarios definidos o no es día laborable.')}</p>`;
+                return;
             }
 
             displayItems.forEach(item => {
@@ -1051,8 +1254,8 @@ function updateCandidatesPerSlotMax() {
                 itemEl.className = `slot p-2 sm:p-2.5 rounded-lg shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs sm:text-sm`;
 
                 if (item.itemType === 'slot') {
-                    itemEl.classList.add('slot-available'); 
-                    
+                    itemEl.classList.add('slot-available');
+
                     itemEl.innerHTML = `
                         <div class="mb-1 sm:mb-0">
                             <p class="font-semibold text-slate-800">${item.startTime} - ${formatTime(parseTime(item.startTime) + item.duration)} (${item.duration} min)</p>
@@ -1087,14 +1290,14 @@ function updateCandidatesPerSlotMax() {
 
         // --- EVENT HANDLERS & ACTIONS ---
         function handleDayClick(dateStr, event) {
-            const isCtrlPressed = event.ctrlKey || event.metaKey; 
+            const isCtrlPressed = event.ctrlKey || event.metaKey;
             const isShiftPressed = event.shiftKey;
 
             if (isShiftPressed && appData.lastSelectedDate && appData.lastSelectedDate !== dateStr) {
                 appData.selectedDates = []; // Start fresh for range selection
                 const d1LocalDate = getLocalDateFromStr(appData.lastSelectedDate);
                 const d2LocalDate = getLocalDateFromStr(dateStr);
-                
+
                 const start = d1LocalDate < d2LocalDate ? d1LocalDate : d2LocalDate;
                 const end = d1LocalDate < d2LocalDate ? d2LocalDate : d1LocalDate;
 
@@ -1105,23 +1308,23 @@ function updateCandidatesPerSlotMax() {
             } else { // Not a shift-click or no valid anchor for shift-click
                 const index = appData.selectedDates.indexOf(dateStr);
                 if (isCtrlPressed) { // Ctrl/Cmd click explicitly adds/removes
-                    if (index > -1) { 
+                    if (index > -1) {
                         appData.selectedDates.splice(index, 1);
                         addLog("Día Deseleccionado (Ctrl/Cmd)", `Día: ${dateStr}`);
-                    } else { 
+                    } else {
                         appData.selectedDates.push(dateStr);
                         addLog("Día Seleccionado (Ctrl/Cmd)", `Día: ${dateStr}`);
                     }
                 } else { // Simple tap/click (no modifiers)
-                    if (appData.selectedDates.length === 1 && appData.selectedDates[0] === dateStr && !isShiftPressed){ // If only this day is selected, deselect it
-                         appData.selectedDates = [];
-                         addLog("Día Deseleccionado (Tap)", `Día: ${dateStr}`);
+                    if (appData.selectedDates.length === 1 && appData.selectedDates[0] === dateStr && !isShiftPressed) { // If only this day is selected, deselect it
+                        appData.selectedDates = [];
+                        addLog("Día Deseleccionado (Tap)", `Día: ${dateStr}`);
                     } else if (index > -1 && appData.selectedDates.length > 1) { // If part of multi-selection, remove it
-                        appData.selectedDates.splice(index,1);
+                        appData.selectedDates.splice(index, 1);
                         addLog("Día Deseleccionado de Múltiples (Tap)", `Día: ${dateStr}`);
                     }
                     else if (index === -1) { // If not selected, add it to selection (or start new selection)
-                        if(!isShiftPressed) appData.selectedDates = [dateStr]; // Clears previous multi-selection if not shift
+                        if (!isShiftPressed) appData.selectedDates = [dateStr]; // Clears previous multi-selection if not shift
                         else appData.selectedDates.push(dateStr); // Add to existing if shift was involved (though handled above)
                         addLog("Día Seleccionado (Tap)", `Día: ${dateStr}`);
                     }
@@ -1132,23 +1335,23 @@ function updateCandidatesPerSlotMax() {
             if (appData.selectedDates.length === 0) {
                 appData.lastSelectedDate = null;
             } else if (appData.selectedDates.length === 1) {
-                 appData.lastSelectedDate = appData.selectedDates[0]; 
+                appData.lastSelectedDate = appData.selectedDates[0];
             }
             renderCalendar();
             updateSidePanel();
         }
-        
-        prevMonthBtn.addEventListener('click', () => { 
-            appData.currentDate.setMonth(appData.currentDate.getMonth() - 1); 
+
+        prevMonthBtn.addEventListener('click', () => {
+            appData.currentDate.setMonth(appData.currentDate.getMonth() - 1);
             addLog("Navegación Calendario", `Mes cambiado a ${appData.currentDate.toLocaleString('es-ES', { month: 'long', year: 'numeric' })}`);
-            renderCalendar(); 
-            updateSidePanel(); 
+            renderCalendar();
+            updateSidePanel();
         });
-        nextMonthBtn.addEventListener('click', () => { 
-            appData.currentDate.setMonth(appData.currentDate.getMonth() + 1); 
+        nextMonthBtn.addEventListener('click', () => {
+            appData.currentDate.setMonth(appData.currentDate.getMonth() + 1);
             addLog("Navegación Calendario", `Mes cambiado a ${appData.currentDate.toLocaleString('es-ES', { month: 'long', year: 'numeric' })}`);
-            renderCalendar(); 
-            updateSidePanel(); 
+            renderCalendar();
+            updateSidePanel();
         });
 
         selectAllVisibleBtn.addEventListener('click', () => {
@@ -1181,150 +1384,150 @@ function updateCandidatesPerSlotMax() {
         });
 
 
-function saveAvailabilityFromPanel(datesToProcess) {
-    if (datesToProcess.length === 0) {
-        showNotification("No hay días seleccionados para generar horarios.", "warning");
-        return;
-    }
-    const type = document.getElementById('interviewTypePanel').value;
-    const duration = parseInt(document.getElementById('slotDurationMinutesPanel').value);
-    const candidatesPerSlot = parseInt(document.getElementById('candidatesPerSlotPanel')?.value) || 1;
-    
-    const formPanelStartTime = document.getElementById('dayCustomStartTimePanel')?.value;
-    const formPanelEndTime = document.getElementById('dayCustomEndTimePanel')?.value;
-    const isFormPanelTimeRangeValidAndProvided = formPanelStartTime && formPanelEndTime && parseTime(formPanelStartTime) < parseTime(formPanelEndTime);
+        function saveAvailabilityFromPanel(datesToProcess) {
+            if (datesToProcess.length === 0) {
+                showNotification("No hay días seleccionados para generar horarios.", "warning");
+                return;
+            }
+            const type = document.getElementById('interviewTypePanel').value;
+            const duration = parseInt(document.getElementById('slotDurationMinutesPanel').value);
+            const candidatesPerSlot = parseInt(document.getElementById('candidatesPerSlotPanel')?.value) || 1;
 
-    if (!type || !duration) {
-        showNotification('Por favor, completa tipo y duración de los slots.', 'error'); return;
-    }
-    if (candidatesPerSlot < 1) {
-        showNotification('El número de candidatos por slot debe ser al menos 1.', 'error'); return;
-    }
+            const formPanelStartTime = document.getElementById('dayCustomStartTimePanel')?.value;
+            const formPanelEndTime = document.getElementById('dayCustomEndTimePanel')?.value;
+            const isFormPanelTimeRangeValidAndProvided = formPanelStartTime && formPanelEndTime && parseTime(formPanelStartTime) < parseTime(formPanelEndTime);
+
+            if (!type || !duration) {
+                showNotification('Por favor, completa tipo y duración de los slots.', 'error'); return;
+            }
+            if (candidatesPerSlot < 1) {
+                showNotification('El número de candidatos por slot debe ser al menos 1.', 'error'); return;
+            }
 
 
-    let daysProcessedCount = 0;
-    let totalSlotsGeneratedOverall = 0;
-    const processedDatesForLog = [];
+            let daysProcessedCount = 0;
+            let totalSlotsGeneratedOverall = 0;
+            const processedDatesForLog = [];
 
-    datesToProcess.forEach(dateStr => {
-        if (isDateTodayOrPast(dateStr)) {
-            addLog("Generación de Slots Omitida (Fecha Inválida)", `Día ${dateStr} es hoy o pasado.`);
-            if (appData.events[dateStr] && appData.events[dateStr].type === 'slots') { delete appData.events[dateStr]; }
-            return; 
-        }
-        
-        const localDate = getLocalDateFromStr(dateStr); 
-        const dayOfWeek = localDate.getDay();
-        const weeklySetting = appData.workingHours[dayOfWeek];
-
-        let dayStartToUse, dayEndToUse;
-        let isCustomOverrideForThisDay = false;
-
-        if (isFormPanelTimeRangeValidAndProvided) {
-            if (weeklySetting.active) {
-                isCustomOverrideForThisDay = true;
-            } else {
-                if (formPanelStartTime !== weeklySetting.startTime || formPanelEndTime !== weeklySetting.endTime) {
-                    isCustomOverrideForThisDay = true;
+            datesToProcess.forEach(dateStr => {
+                if (isDateTodayOrPast(dateStr)) {
+                    addLog("Generación de Slots Omitida (Fecha Inválida)", `Día ${dateStr} es hoy o pasado.`);
+                    if (appData.events[dateStr] && appData.events[dateStr].type === 'slots') { delete appData.events[dateStr]; }
+                    return;
                 }
-            }
-        }
 
-        if (weeklySetting.active || isCustomOverrideForThisDay) {
-            if (isCustomOverrideForThisDay) {
-                dayStartToUse = formPanelStartTime;
-                dayEndToUse = formPanelEndTime;
-            } else { 
-                dayStartToUse = weeklySetting.startTime;
-                dayEndToUse = weeklySetting.endTime;
-            }
+                const localDate = getLocalDateFromStr(dateStr);
+                const dayOfWeek = localDate.getDay();
+                const weeklySetting = appData.workingHours[dayOfWeek];
 
-            const startTimeInMinutes = parseTime(dayStartToUse);
-            const endTimeInMinutes = parseTime(dayEndToUse);
+                let dayStartToUse, dayEndToUse;
+                let isCustomOverrideForThisDay = false;
 
-            if (startTimeInMinutes >= endTimeInMinutes) {
-                addLog("Error en Horario Efectivo", `Para ${dateStr}, inicio (${dayStartToUse}) no es anterior a fin (${dayEndToUse}). Se omiten slots.`);
-                if (appData.events[dateStr] && appData.events[dateStr].type === 'slots') { delete appData.events[dateStr]; }
-                return; 
-            }
-
-            daysProcessedCount++;
-            const slots = [];
-            let currentTimeInMinutes = startTimeInMinutes;
-            while (currentTimeInMinutes < endTimeInMinutes) {
-                const slotStart = currentTimeInMinutes;
-                const slotEnd = currentTimeInMinutes + duration;
-                if (slotEnd > endTimeInMinutes) break;
-
-                let isGlobalBreak = false;
-                for (const gnb of appData.globalNonAvailability) {
-                    const gnbStart = parseTime(gnb.start);
-                    const gnbEnd = parseTime(gnb.end);
-                    if (Math.max(slotStart, gnbStart) < Math.min(slotEnd, gnbEnd)) {
-                        isGlobalBreak = true; break;
+                if (isFormPanelTimeRangeValidAndProvided) {
+                    if (weeklySetting.active) {
+                        isCustomOverrideForThisDay = true;
+                    } else {
+                        if (formPanelStartTime !== weeklySetting.startTime || formPanelEndTime !== weeklySetting.endTime) {
+                            isCustomOverrideForThisDay = true;
+                        }
                     }
                 }
-                if (!isGlobalBreak) {
-                    slots.push({ 
-                        id: generateUUID(), 
-                        startTime: formatTime(slotStart), 
-                        duration: duration, 
-                        interviewType: type, 
-                        status: 'available',
-                        candidates: candidatesPerSlot // Store candidates per slot
-                    });
-                    totalSlotsGeneratedOverall++;
+
+                if (weeklySetting.active || isCustomOverrideForThisDay) {
+                    if (isCustomOverrideForThisDay) {
+                        dayStartToUse = formPanelStartTime;
+                        dayEndToUse = formPanelEndTime;
+                    } else {
+                        dayStartToUse = weeklySetting.startTime;
+                        dayEndToUse = weeklySetting.endTime;
+                    }
+
+                    const startTimeInMinutes = parseTime(dayStartToUse);
+                    const endTimeInMinutes = parseTime(dayEndToUse);
+
+                    if (startTimeInMinutes >= endTimeInMinutes) {
+                        addLog("Error en Horario Efectivo", `Para ${dateStr}, inicio (${dayStartToUse}) no es anterior a fin (${dayEndToUse}). Se omiten slots.`);
+                        if (appData.events[dateStr] && appData.events[dateStr].type === 'slots') { delete appData.events[dateStr]; }
+                        return;
+                    }
+
+                    daysProcessedCount++;
+                    const slots = [];
+                    let currentTimeInMinutes = startTimeInMinutes;
+                    while (currentTimeInMinutes < endTimeInMinutes) {
+                        const slotStart = currentTimeInMinutes;
+                        const slotEnd = currentTimeInMinutes + duration;
+                        if (slotEnd > endTimeInMinutes) break;
+
+                        let isGlobalBreak = false;
+                        for (const gnb of appData.globalNonAvailability) {
+                            const gnbStart = parseTime(gnb.start);
+                            const gnbEnd = parseTime(gnb.end);
+                            if (Math.max(slotStart, gnbStart) < Math.min(slotEnd, gnbEnd)) {
+                                isGlobalBreak = true; break;
+                            }
+                        }
+                        if (!isGlobalBreak) {
+                            slots.push({
+                                id: generateUUID(),
+                                startTime: formatTime(slotStart),
+                                duration: duration,
+                                interviewType: type,
+                                status: 'available',
+                                candidates: candidatesPerSlot // Store candidates per slot
+                            });
+                            totalSlotsGeneratedOverall++;
+                        }
+                        currentTimeInMinutes += duration;
+                    }
+
+                    const daySettingsToStore = {
+                        slotDurationMinutes: duration,
+                        interviewType: type,
+                        candidatesPerSlot: candidatesPerSlot // Store in daySettings
+                    };
+                    if (isCustomOverrideForThisDay) {
+                        daySettingsToStore.dayStartTime = formPanelStartTime;
+                        daySettingsToStore.dayEndTime = formPanelEndTime;
+                    }
+
+                    appData.events[dateStr] = { type: 'slots', slots: slots, daySettings: daySettingsToStore };
+                    processedDatesForLog.push(dateStr);
+
+                } else {
+                    addLog("Generación de Slots Omitida (No Laborable sin Override Efectivo)", `Día ${dateStr} (${getDayName(dayOfWeek)}) no procesado.`);
+                    if (appData.events[dateStr] && appData.events[dateStr].type === 'slots') {
+                        delete appData.events[dateStr];
+                        addLog("Limpieza de Slots Previos", `Slots eliminados para ${dateStr}.`);
+                    }
                 }
-                currentTimeInMinutes += duration;
-            }
-            
-            const daySettingsToStore = {
-                slotDurationMinutes: duration,
-                interviewType: type,
-                candidatesPerSlot: candidatesPerSlot // Store in daySettings
-            };
-            if (isCustomOverrideForThisDay) { 
-                daySettingsToStore.dayStartTime = formPanelStartTime;
-                daySettingsToStore.dayEndTime = formPanelEndTime;
-            }
+            });
 
-            appData.events[dateStr] = { type: 'slots', slots: slots, daySettings: daySettingsToStore };
-            processedDatesForLog.push(dateStr);
-
-        } else {
-            addLog("Generación de Slots Omitida (No Laborable sin Override Efectivo)", `Día ${dateStr} (${getDayName(dayOfWeek)}) no procesado.`);
-            if (appData.events[dateStr] && appData.events[dateStr].type === 'slots') {
-                delete appData.events[dateStr]; 
-                addLog("Limpieza de Slots Previos", `Slots eliminados para ${dateStr}.`);
+            let logSummary = `Tipo: ${type}, Duración: ${duration}m, Candidatos/Slot: ${candidatesPerSlot}.`;
+            if (isFormPanelTimeRangeValidAndProvided) {
+                logSummary += ` Horario del panel usado como referencia: ${formPanelStartTime}-${formPanelEndTime}.`;
             }
+            if (processedDatesForLog.length > 0) {
+                logSummary += ` Días con slots generados/actualizados: ${processedDatesForLog.join(', ')}.`;
+            } else {
+                logSummary += ` Ningún día fue procesado para generar nuevos slots.`;
+            }
+            addLog("Operación de Guardar Disponibilidad Completada", logSummary);
+
+            if (daysProcessedCount > 0) {
+                showNotification(`${daysProcessedCount} día(s) actualizados. Total ${totalSlotsGeneratedOverall} slots generados.`, "success");
+            } else {
+                showNotification("No se generaron nuevos horarios. Verifica la selección y la configuración semanal.", "warning");
+            }
+            renderCalendar();
+            updateSidePanel();
         }
-    }); 
-
-    let logSummary = `Tipo: ${type}, Duración: ${duration}m, Candidatos/Slot: ${candidatesPerSlot}.`;
-    if (isFormPanelTimeRangeValidAndProvided) {
-        logSummary += ` Horario del panel usado como referencia: ${formPanelStartTime}-${formPanelEndTime}.`;
-    }
-    if (processedDatesForLog.length > 0) {
-         logSummary += ` Días con slots generados/actualizados: ${processedDatesForLog.join(', ')}.`;
-    } else {
-        logSummary += ` Ningún día fue procesado para generar nuevos slots.`;
-    }
-    addLog("Operación de Guardar Disponibilidad Completada", logSummary);
-
-    if (daysProcessedCount > 0) {
-        showNotification(`${daysProcessedCount} día(s) actualizados. Total ${totalSlotsGeneratedOverall} slots generados.`, "success");
-    } else {
-        showNotification("No se generaron nuevos horarios. Verifica la selección y la configuración semanal.", "warning");
-    }
-    renderCalendar();
-    updateSidePanel();
-}
 
 
 
         function markSelectedDaysAsOff(datesToProcess) {
             if (datesToProcess.length === 0) return;
-            showConfirm( `Marcar ${datesToProcess.length} día(s) como Libres`, 'Esto eliminará horarios existentes. ¿Continuar?', () => {
+            showConfirm(`Marcar ${datesToProcess.length} día(s) como Libres`, 'Esto eliminará horarios existentes. ¿Continuar?', () => {
                 datesToProcess.forEach(dateStr => { appData.events[dateStr] = { type: 'day-off' }; });
                 addLog("Días Marcados como Libres", `Día(s): ${datesToProcess.join(', ')}`);
                 renderCalendar();
@@ -1332,10 +1535,10 @@ function saveAvailabilityFromPanel(datesToProcess) {
                 showNotification(`${datesToProcess.length} día(s) marcado(s) como libre.`, "success");
             });
         }
-        
+
         function removeDayOffStatus(datesToProcess) {
             if (datesToProcess.length === 0) return;
-             showConfirm( `Quitar estado "Libre" de ${datesToProcess.length} día(s)`, '¿Estás seguro?', () => {
+            showConfirm(`Quitar estado "Libre" de ${datesToProcess.length} día(s)`, '¿Estás seguro?', () => {
                 let count = 0;
                 datesToProcess.forEach(dateStr => {
                     if (appData.events[dateStr] && appData.events[dateStr].type === 'day-off') {
@@ -1346,7 +1549,7 @@ function saveAvailabilityFromPanel(datesToProcess) {
                 if (count > 0) {
                     addLog("Estado 'Libre' Quitado", `Día(s): ${datesToProcess.join(', ')}`);
                     renderCalendar();
-                    updateSidePanel(); 
+                    updateSidePanel();
                     showNotification(`Estado "Libre" quitado de ${count} día(s).`, "success");
                 } else {
                     showNotification("Ningún día seleccionado estaba como libre.", "info");
@@ -1356,11 +1559,11 @@ function saveAvailabilityFromPanel(datesToProcess) {
 
         function clearSlotsForDays(datesToProcess) {
             if (datesToProcess.length === 0) return;
-            showConfirm( `Eliminar Horarios de ${datesToProcess.length} día(s)`, '¿Seguro? (No afecta días "Libre")', () => {
+            showConfirm(`Eliminar Horarios de ${datesToProcess.length} día(s)`, '¿Seguro? (No afecta días "Libre")', () => {
                 let count = 0;
                 datesToProcess.forEach(dateStr => {
                     if (appData.events[dateStr] && appData.events[dateStr].type === 'slots') {
-                        delete appData.events[dateStr]; 
+                        delete appData.events[dateStr];
                         count++;
                     }
                 });
@@ -1376,31 +1579,31 @@ function saveAvailabilityFromPanel(datesToProcess) {
                 showNotification("No hay disponibilidad para copiar.", "error"); return;
             }
             appData.copiedDayData = JSON.parse(JSON.stringify(appData.events[sourceDateStr]));
-            addLog("Disponibilidad de Día Copiada", 
+            addLog("Disponibilidad de Día Copiada",
                 `Desde: ${sourceDateStr} (Tipo: ${appData.copiedDayData.daySettings.interviewType}, Dur: ${appData.copiedDayData.daySettings.slotDurationMinutes}m, Cand: ${appData.copiedDayData.daySettings.candidatesPerSlot || 1})`
             );
-             const dateObj = getLocalDateFromStr(sourceDateStr);
-            showNotification(`Disponibilidad de ${dateObj.toLocaleDateString('es-ES', {month:'short', day:'numeric'})} copiada.`, "success");
-            updateSidePanel(); 
+            const dateObj = getLocalDateFromStr(sourceDateStr);
+            showNotification(`Disponibilidad de ${dateObj.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' })} copiada.`, "success");
+            updateSidePanel();
         }
 
         function pasteDayAvailability(targetDatesArray) {
             if (!appData.copiedDayData) { showNotification("No hay disponibilidad copiada.", "error"); return; }
             if (targetDatesArray.length === 0) { showNotification("Selecciona días destino.", "error"); return; }
-            
+
             let count = 0;
             const validTargetDates = [];
             targetDatesArray.forEach(dateStr => {
                 if (isDateTodayOrPast(dateStr)) {
                     addLog("Pegado Omitido (Fecha Inválida)", `Día ${dateStr} es hoy o pasado.`);
                 } else {
-                     const localDate = getLocalDateFromStr(dateStr);
-                     const dayOfWeek = localDate.getDay();
-                     if (appData.workingHours[dayOfWeek].active) { 
+                    const localDate = getLocalDateFromStr(dateStr);
+                    const dayOfWeek = localDate.getDay();
+                    if (appData.workingHours[dayOfWeek].active) {
                         validTargetDates.push(dateStr);
-                     } else {
+                    } else {
                         addLog("Pegado Omitido (Día Semanal No Laborable)", `Día ${dateStr} no es laborable.`);
-                     }
+                    }
                 }
             });
 
@@ -1410,17 +1613,17 @@ function saveAvailabilityFromPanel(datesToProcess) {
             }
 
             validTargetDates.forEach(dateStr => {
-                appData.events[dateStr] = JSON.parse(JSON.stringify(appData.copiedDayData)); 
+                appData.events[dateStr] = JSON.parse(JSON.stringify(appData.copiedDayData));
                 if (appData.events[dateStr].slots) {
                     appData.events[dateStr].slots.forEach(slot => {
                         slot.id = generateUUID();
-                        slot.status = 'available'; 
+                        slot.status = 'available';
                         // candidatesPerSlot should be part of copiedDayData.slots items if saved correctly
                     });
                 }
                 count++;
             });
-            addLog("Disponibilidad de Día Pegada", 
+            addLog("Disponibilidad de Día Pegada",
                 `A ${count} día(s): ${validTargetDates.join(', ')} (Tipo: ${appData.copiedDayData.daySettings.interviewType}, Dur: ${appData.copiedDayData.daySettings.slotDurationMinutes}m, Cand: ${appData.copiedDayData.daySettings.candidatesPerSlot || 1})`
             );
             showNotification(`Disponibilidad pegada a ${count} día(s).`, "success");
@@ -1432,7 +1635,7 @@ function saveAvailabilityFromPanel(datesToProcess) {
         function closeModal(modalElement) { modalElement.style.display = 'none'; }
 
         document.getElementById('cancelConfirm').addEventListener('click', () => closeModal(confirmModal));
-        
+
         function cancelSlot(dateStr, slotId) {
             const dayEvents = appData.events[dateStr];
             let slotTime = "N/A";
@@ -1446,7 +1649,7 @@ function saveAvailabilityFromPanel(datesToProcess) {
             updateSidePanel();
             showNotification("Horario cancelado.", "success");
         }
-        
+
         function showConfirm(title, message, onConfirm) {
             confirmTitleEl.textContent = title;
             confirmMessageEl.textContent = message;
@@ -1459,48 +1662,84 @@ function saveAvailabilityFromPanel(datesToProcess) {
             closeModal(confirmModal);
             confirmCallback = null;
         });
-        
+
 
         function initializeAccordions() {
-    document.querySelectorAll('.accordion-header').forEach(header => {
-        header.addEventListener('click', () => {
-            const content = header.nextElementSibling;
-            const icon = header.querySelector('.accordion-icon');
-            const isOpen = content.style.maxHeight && content.style.maxHeight !== '0px';
+            document.querySelectorAll('.accordion-header').forEach(header => {
+                header.addEventListener('click', () => {
+                    const content = header.nextElementSibling;
+                    const icon = header.querySelector('.accordion-icon');
+                    const isOpen = content.style.maxHeight && content.style.maxHeight !== '0px';
 
-            if (isOpen) {
-                content.style.maxHeight = '0px';
-                if (icon) {
-                    icon.textContent = '+';
-                    // Opcional: icon.classList.remove('rotate-180');
-                }
-            } else {
-                // Para la animación, necesitas que el contenido tenga una altura intrínseca
-                // o usar un valor suficientemente grande para max-height.
-                // content.scrollHeight puede ser problemático si el contenido está cambiando.
-                content.style.maxHeight = content.scrollHeight + 'px'; // O un valor fijo grande como '1000px' si el contenido es muy variable
-                if (icon) {
-                    icon.textContent = '-';
-                    // Opcional: icon.classList.add('rotate-180');
-                }
-                // Si otros acordeones deben cerrarse cuando uno se abre (comportamiento de acordeón exclusivo):
-                // document.querySelectorAll('.accordion-content').forEach(otherContent => {
-                //     if (otherContent !== content) {
-                //         otherContent.style.maxHeight = '0px';
-                //         const otherIcon = otherContent.previousElementSibling.querySelector('.accordion-icon');
-                //         if (otherIcon) otherIcon.textContent = '+';
-                //     }
-                // });
-            }
-        });
-    });
+                    if (isOpen) {
+                        content.style.maxHeight = '0px';
+                        if (icon) {
+                            icon.textContent = '+';
+                            // Opcional: icon.classList.remove('rotate-180');
+                        }
+                    } else {
+                        // Para la animación, necesitas que el contenido tenga una altura intrínseca
+                        // o usar un valor suficientemente grande para max-height.
+                        // content.scrollHeight puede ser problemático si el contenido está cambiando.
+                        content.style.maxHeight = content.scrollHeight + 'px'; // O un valor fijo grande como '1000px' si el contenido es muy variable
+                        if (icon) {
+                            icon.textContent = '-';
+                            // Opcional: icon.classList.add('rotate-180');
+                        }
+                        // Si otros acordeones deben cerrarse cuando uno se abre (comportamiento de acordeón exclusivo):
+                        // document.querySelectorAll('.accordion-content').forEach(otherContent => {
+                        //     if (otherContent !== content) {
+                        //         otherContent.style.maxHeight = '0px';
+                        //         const otherIcon = otherContent.previousElementSibling.querySelector('.accordion-icon');
+                        //         if (otherIcon) otherIcon.textContent = '+';
+                        //     }
+                        // });
+                    }
+                });
+            });
 
-    // Asegurar que el contenido de los acordeones tenga una transición suave
-    // y que el estado inicial (abierto/cerrado) se maneje.
-    document.querySelectorAll('.accordion-content').forEach(content => {
-        content.style.transition = 'max-height 0.3s ease-in-out';
-        // El estado inicial (abierto/cerrado) ya está definido en el HTML por `style="max-height: ...;"`
-    });
+            // Asegurar que el contenido de los acordeones tenga una transición suave
+            // y que el estado inicial (abierto/cerrado) se maneje.
+            document.querySelectorAll('.accordion-content').forEach(content => {
+                content.style.transition = 'max-height 0.3s ease-in-out';
+                // El estado inicial (abierto/cerrado) ya está definido en el HTML por `style="max-height: ...;"`
+            });
+        }
+        
+
+        function handleGlobalBreakStartTimeChange() {
+    if (!globalBreakStartTimeSelectEl || !globalBreakEndTimeSelectEl) return;
+
+    const startTimeStr = globalBreakStartTimeSelectEl.value;
+    if (!startTimeStr) { 
+        // Si no hay valor de inicio, podrías resetear el de fin o dejarlo como está.
+        // Por ahora, si el de inicio está vacío, no hacemos nada con el de fin.
+        return;
+    }
+
+    let startTimeInMinutes = parseTime(startTimeStr);
+    let endTimeInMinutes = startTimeInMinutes + 60; // Añadir 1 hora (60 minutos)
+
+    // Formatear la hora de fin. El módulo (24*60) maneja el cruce de medianoche (ej. 23:30 + 1h -> 00:30)
+    const formattedEndTime = formatTime(endTimeInMinutes % (24 * 60)); 
+    
+    // Establecer el valor en el select de hora de fin.
+    // Asumimos que populateTimeSelectsForWorkingHours ya llenó este select con las opciones correctas (:00, :30)
+    globalBreakEndTimeSelectEl.value = formattedEndTime;
+
+    // Pequeña validación extra: si por alguna razón la hora de fin calculada es anterior o igual a la de inicio
+    // (después de la normalización por cruce de medianoche), ajustamos a un mínimo de 30 min de descanso.
+    // Esto es una salvaguarda, no debería ocurrir con una simple suma de 60min si la hora de inicio es válida.
+    if (parseTime(globalBreakEndTimeSelectEl.value) <= startTimeInMinutes) {
+        // Esta condición podría ser compleja si startTimeStr es tarde (ej. "23:30", donde "00:30" es correcto y menor numéricamente)
+        // Vamos a refinarla para que solo actúe si no es un cruce de medianoche válido
+        const endValTime = parseTime(globalBreakEndTimeSelectEl.value);
+        // Si la hora de fin es menor que la de inicio Y la hora de inicio no fue tan tarde como para que un cruce sea normal
+        if (endValTime <= startTimeInMinutes && startTimeInMinutes < parseTime("23:00")) { 
+            let safeEndTimeInMinutes = startTimeInMinutes + 30; // Mínimo 30 mins
+            globalBreakEndTimeSelectEl.value = formatTime(safeEndTimeInMinutes % (24*60));
+        }
+    }
 }
 
 
@@ -1508,13 +1747,13 @@ function saveAvailabilityFromPanel(datesToProcess) {
         // --- JSON EXPORT ---
         function exportConfigurationToJson() {
             const dataToExport = {
-                version: "1.4", 
+                version: "1.4",
                 timestamp: new Date().toISOString(),
-                horarioLaboralSemanal: appData.workingHours, 
-                configuracionEventosDiarios: appData.events, 
+                horarioLaboralSemanal: appData.workingHours,
+                configuracionEventosDiarios: appData.events,
                 descansosGlobales: appData.globalNonAvailability
             };
-            const jsonString = JSON.stringify(dataToExport, null, 2); 
+            const jsonString = JSON.stringify(dataToExport, null, 2);
             const blob = new Blob([jsonString], { type: "application/json" });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -1534,16 +1773,29 @@ function saveAvailabilityFromPanel(datesToProcess) {
 
 
         // --- INITIAL LOAD & STATIC LISTENERS ---
-        if (addGlobalBreakBtn) { 
+        if (addGlobalBreakBtn) {
             addGlobalBreakBtn.innerHTML = ICONS.plus + addGlobalBreakBtn.textContent;
             addGlobalBreakBtn.addEventListener('click', addGlobalBreak);
         }
+
+    // Poblar y configurar los selects para Descansos Globales
+    if (globalBreakStartTimeSelectEl && globalBreakEndTimeSelectEl) {
+        populateTimeSelectsForWorkingHours(globalBreakStartTimeSelectEl, "12:00");
+        // La hora de fin inicial se establecerá automáticamente al disparar 'change' o por handleGlobalBreakStartTimeChange
+        // Así que podemos popularlo y luego dejar que el handler lo ajuste.
+        populateTimeSelectsForWorkingHours(globalBreakEndTimeSelectEl, "13:00"); 
+        
+        // Configurar el valor inicial de fin basado en el de inicio
+        handleGlobalBreakStartTimeChange(); // Llama para establecer el fin inicial correctamente
+
+        globalBreakStartTimeSelectEl.addEventListener('change', handleGlobalBreakStartTimeChange);
+    }
     
     addLog("Aplicación Iniciada", `Versión del planificador cargada.`);
     renderCalendar();
-    updateSidePanel(); // updateSidePanel llama a renderWeeklyWorkingHoursPanel y renderGlobalNonAvailabilityList
-    initializeAccordions(); // Llama a esto aquí
-</script>
+    updateSidePanel(); 
+    initializeAccordions(); // Asumo que esta ya la tienes de la respuesta anterior
     </script>
 </body>
+
 </html>
