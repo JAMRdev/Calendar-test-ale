@@ -408,6 +408,19 @@
                             </div>
                             <div class="space-y-2.5 sm:space-y-3 p-3 bg-slate-50/50 rounded-lg border border-slate-200">
                                 <div class="mb-2">
+                                    <label for="globalBreakDaySelect" class="block text-xs font-medium text-slate-700 mb-1">Aplicar a Día:</label>
+                                    <select id="globalBreakDaySelect" class="w-full p-2 border border-slate-300 rounded-md text-sm bg-white shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                        <option value="all">Todos los días</option>
+                                        <option value="1">Lunes</option>
+                                        <option value="2">Martes</option>
+                                        <option value="3">Miércoles</option>
+                                        <option value="4">Jueves</option>
+                                        <option value="5">Viernes</option>
+                                        <option value="6">Sábado</option>
+                                        <option value="0">Domingo</option>
+                                    </select>
+                                </div>
+                                <div class="mb-2">
                                     <label for="globalBreakStartTimeSelect"
                                         class="block text-xs font-medium text-slate-700 mb-1">Hora Inicio
                                         Descanso:</label>
@@ -421,7 +434,7 @@
                                         class="w-full p-2 border border-slate-300 rounded-md text-sm bg-white shadow-sm focus:ring-indigo-500 focus:border-indigo-500"></select>
                                 </div>
                                 <input type="text" id="globalBreakTitle"
-                                    class="w-full p-2 border border-slate-300 rounded-md text-sm"
+                                    class="w-full p-2 border border-slate-300 rounded-md text-sm mb-2" 
                                     placeholder="Ej: Almuerzo">
                                 <button id="addGlobalBreakBtn" class="btn btn-info w-full">Añadir Descanso</button>
                             </div>
@@ -487,8 +500,8 @@
             selectedDates: [],
             lastSelectedDate: null,
             events: {},
-            globalNonAvailability: [
-                { id: 'gnp_lunch', start: "12:00", end: "13:00", title: "Almuerzo (Global)" }
+            globalNonAvailability: [ // MODIFIED: Added dayOfWeek to default item
+                { id: 'gnp_lunch', start: "12:00", end: "13:00", title: "Almuerzo (Global)", dayOfWeek: 'all' }
             ],
             workingHours: {
                 0: { active: false, startTime: "09:00", endTime: "17:00" }, // Domingo
@@ -524,9 +537,9 @@
         const confirmMessageEl = document.getElementById('confirmMessage');
         let confirmCallback = null;
         const notificationArea = document.getElementById('notificationArea');
-const globalBreakStartTimeSelectEl = document.getElementById('globalBreakStartTimeSelect');
-const globalBreakEndTimeSelectEl = document.getElementById('globalBreakEndTimeSelect');
-// El globalBreakTitleInput ya debería estar definido
+        const globalBreakStartTimeSelectEl = document.getElementById('globalBreakStartTimeSelect');
+        const globalBreakEndTimeSelectEl = document.getElementById('globalBreakEndTimeSelect');
+        const globalBreakDaySelectEl = document.getElementById('globalBreakDaySelect'); // NEW: DOM element for day select
 
         // --- LOGGING ---
         function addLog(action, details = "") {
@@ -576,7 +589,7 @@ const globalBreakEndTimeSelectEl = document.getElementById('globalBreakEndTimeSe
 
         // --- UTILITY FUNCTIONS ---
         function formatDate(date) { // date is a Date object
-            const d = new Date(date); // Ensure it's a new Date object to avoid modifying the original
+            const d = new Date(date); 
             let month = '' + (d.getMonth() + 1);
             let day = '' + d.getDate();
             const year = d.getFullYear();
@@ -590,12 +603,11 @@ const globalBreakEndTimeSelectEl = document.getElementById('globalBreakEndTimeSe
             today.setHours(0, 0, 0, 0);
 
             const [year, month, day] = dateStr.split('-').map(Number);
-            const compareDate = new Date(year, month - 1, day); // Creates date in local timezone
-            compareDate.setHours(0, 0, 0, 0); // Ensure it's at the beginning of the day for accurate comparison
+            const compareDate = new Date(year, month - 1, day); 
+            compareDate.setHours(0, 0, 0, 0); 
             return compareDate <= today;
         }
 
-        // Helper to get a local Date object from YYYY-MM-DD string
         function getLocalDateFromStr(dateStr) {
             const [year, month, day] = dateStr.split('-').map(Number);
             return new Date(year, month - 1, day);
@@ -649,8 +661,8 @@ const globalBreakEndTimeSelectEl = document.getElementById('globalBreakEndTimeSe
 
             for (let day = 1; day <= daysInMonth; day++) {
                 const dayCell = document.createElement('div');
-                const currentDateObj = new Date(year, month, day); // Local date object for this day
-                const dateStr = formatDate(currentDateObj); // YYYY-MM-DD string
+                const currentDateObj = new Date(year, month, day); 
+                const dateStr = formatDate(currentDateObj); 
 
                 dayCell.className = 'calendar-day border border-slate-200 p-1.5 sm:p-2 cursor-pointer flex flex-col items-center justify-start relative text-xs rounded-md';
 
@@ -659,7 +671,7 @@ const globalBreakEndTimeSelectEl = document.getElementById('globalBreakEndTimeSe
                     dayCell.title = "No se puede generar disponibilidad para días pasados o el actual.";
                 } else {
                     if (formatDate(new Date()) === dateStr && !appData.selectedDates.includes(dateStr) && (!appData.events[dateStr] || appData.events[dateStr].type !== 'day-off')) {
-                        dayCell.classList.add('bg-indigo-50'); // Highlight today if not selected and not a day-off
+                        dayCell.classList.add('bg-indigo-50'); 
                     }
                 }
 
@@ -782,7 +794,7 @@ const globalBreakEndTimeSelectEl = document.getElementById('globalBreakEndTimeSe
         function populateTimeSelectsForWorkingHours(selectElement, defaultValue) {
             selectElement.innerHTML = '';
             for (let hour = 0; hour < 24; hour++) {
-                for (let minute = 0; minute < 60; minute += 30) { // Cambiado de 15 a 30
+                for (let minute = 0; minute < 60; minute += 30) { 
                     const timeString = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
                     const option = document.createElement('option');
                     option.value = timeString;
@@ -823,7 +835,7 @@ const globalBreakEndTimeSelectEl = document.getElementById('globalBreakEndTimeSe
             if (!mondayConfig) return;
 
             showConfirm("Aplicar Lunes a Todos", "¿Copiar horario del Lunes a todos los demás días laborables (Martes a Viernes)? Domingo y Sábado no se modificarán.", () => {
-                for (let i = 2; i <= 5; i++) {
+                for (let i = 2; i <= 5; i++) { 
                     appData.workingHours[i].active = mondayConfig.active;
                     appData.workingHours[i].startTime = mondayConfig.startTime;
                     appData.workingHours[i].endTime = mondayConfig.endTime;
@@ -834,11 +846,12 @@ const globalBreakEndTimeSelectEl = document.getElementById('globalBreakEndTimeSe
             });
         });
 
-        function getDayName(dayIndex) {
+        function getDayName(dayIndex) { // Expects integer 0-6
             return ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"][dayIndex];
         }
 
 
+        // MODIFIED: To display day of week for global breaks
         function renderGlobalNonAvailabilityList() {
             if (!globalNonAvailabilityListEl) return;
             globalNonAvailabilityListEl.innerHTML = '';
@@ -849,10 +862,16 @@ const globalBreakEndTimeSelectEl = document.getElementById('globalBreakEndTimeSe
             appData.globalNonAvailability.forEach(breakItem => {
                 const itemEl = document.createElement('div');
                 itemEl.className = 'flex justify-between items-center p-2 bg-slate-100 rounded-md shadow-sm';
+                
+                let dayDisplay = "Todos los días";
+                if (breakItem.dayOfWeek !== 'all' && typeof breakItem.dayOfWeek === 'number') {
+                    dayDisplay = getDayName(breakItem.dayOfWeek);
+                }
+
                 itemEl.innerHTML = `
                     <div>
                         <span class="font-medium text-slate-700 text-sm">${breakItem.title}</span>
-                        <span class="text-slate-500 text-xs block">${breakItem.start} - ${breakItem.end}</span>
+                        <span class="text-slate-500 text-xs block">${breakItem.start} - ${breakItem.end} (${dayDisplay})</span>
                     </div>
                     <button data-id="${breakItem.id}" class="text-rose-500 hover:text-rose-700 remove-global-break-btn p-1 rounded-full hover:bg-rose-100">
                         ${ICONS.trash}
@@ -869,58 +888,69 @@ const globalBreakEndTimeSelectEl = document.getElementById('globalBreakEndTimeSe
             removeGlobalBreak(e.currentTarget.dataset.id);
         }
 
-function addGlobalBreak() {
-    const start = globalBreakStartTimeSelectEl.value; // Leer del nuevo select
-    const end = globalBreakEndTimeSelectEl.value;     // Leer del nuevo select
-    const titleInput = document.getElementById('globalBreakTitle');
-    const title = titleInput.value.trim() || 'Descanso';
+        // MODIFIED: To include dayOfWeek when adding a global break
+        function addGlobalBreak() {
+            const start = globalBreakStartTimeSelectEl.value;
+            const end = globalBreakEndTimeSelectEl.value;    
+            const titleInput = document.getElementById('globalBreakTitle');
+            const title = titleInput.value.trim() || 'Descanso';
+            const selectedDayOfWeekValue = globalBreakDaySelectEl.value; // "all", "0", "1", ...
 
-    if (!start || !end ) {
-        showNotification("Por favor, especifica hora de inicio y fin para el descanso global.", "error"); return;
-    }
-    if (parseTime(start) >= parseTime(end)) {
-        // Permitir que un descanso cruce la medianoche (ej: 23:00 - 00:30)
-        // parseTime("23:00") es 1380, parseTime("00:30") es 30. 1380 >= 30 es true.
-        // Necesitamos una lógica que entienda el cruce de medianoche si parseTime(end) < parseTime(start)
-        let startMinutes = parseTime(start);
-        let endMinutes = parseTime(end);
+            if (!start || !end ) {
+                showNotification("Por favor, especifica hora de inicio y fin para el descanso global.", "error"); return;
+            }
+            if (parseTime(start) >= parseTime(end)) {
+                let startMinutes = parseTime(start);
+                let endMinutes = parseTime(end);
+                if (endMinutes <= startMinutes && !(endMinutes < parseTime("06:00") && startMinutes > parseTime("18:00"))) {
+                    showNotification("La hora de fin debe ser posterior a la de inicio para el descanso global.", "error");    
+                    return;
+                }
+            }
 
-        // Si endMinutes es menor que startMinutes, asumimos que cruzó la medianoche.
-        // Esta validación es para asegurar que el periodo de descanso no sea negativo o cero en el mismo día.
-        if (endMinutes <= startMinutes && !(endMinutes < parseTime("06:00") && startMinutes > parseTime("18:00"))) {
-             // La segunda condición es para permitir el cruce normal (ej. 23:00 a 01:00).
-             // Si no es un cruce de medianoche válido (ej. 14:00 a 13:30), entonces es un error.
-            showNotification("La hora de fin debe ser posterior a la de inicio para el descanso global.", "error"); 
-            return;
+            const dayOfWeekForStorage = selectedDayOfWeekValue === 'all' ? 'all' : parseInt(selectedDayOfWeekValue);
+            const dayTextForLog = selectedDayOfWeekValue === 'all' ? 'Todos los días' : getDayName(parseInt(selectedDayOfWeekValue));
+
+            appData.globalNonAvailability.push({ 
+                id: 'gnb_' + Date.now(), 
+                start, 
+                end, 
+                title,
+                dayOfWeek: dayOfWeekForStorage // Store dayOfWeek
+            });
+            addLog("Descanso Global Añadido", `Título: ${title}, Horario: ${start} - ${end}, Día: ${dayTextForLog}`);
+            renderGlobalNonAvailabilityList();    
+            showNotification(`Descanso global "${title}" añadido.`, "success");
+            
+            // Reset inputs
+            globalBreakStartTimeSelectEl.value = "12:00";    
+            if (globalBreakStartTimeSelectEl.dispatchEvent) { 
+                globalBreakStartTimeSelectEl.dispatchEvent(new Event('change', { 'bubbles': true }));
+            } else { 
+                handleGlobalBreakStartTimeChange();
+            }
+            titleInput.value = "";
+            globalBreakDaySelectEl.value = "all"; // Reset day select
+            
+            renderCalendar();    
+            if(appData.selectedDates.length > 0) {    
+                updateSidePanel();    
+            }
         }
-    }
-    appData.globalNonAvailability.push({ id: 'gnb_' + Date.now(), start, end, title });
-    addLog("Descanso Global Añadido", `Título: ${title}, Horario: ${start} - ${end}`);
-    renderGlobalNonAvailabilityList(); 
-    showNotification(`Descanso global "${title}" añadido.`, "success");
-    
-    // Resetear los selects y el título
-    globalBreakStartTimeSelectEl.value = "12:00"; 
-    // Disparar el evento change para que la hora de fin se actualice automáticamente a 13:00
-    if (globalBreakStartTimeSelectEl.dispatchEvent) { // Comprobación para navegadores más antiguos / entornos de prueba
-        globalBreakStartTimeSelectEl.dispatchEvent(new Event('change', { 'bubbles': true }));
-    } else { // Fallback si dispatchEvent no está o no funciona como se espera
-        handleGlobalBreakStartTimeChange();
-    }
-    titleInput.value = "";
-    
-    renderCalendar(); 
-    if(appData.selectedDates.length > 0) { 
-        updateSidePanel(); 
-    }
-}
 
+        // MODIFIED: Log message for removeGlobalBreak
         function removeGlobalBreak(idToRemove) {
             const breakItem = appData.globalNonAvailability.find(b => b.id === idToRemove);
             if (!breakItem) return;
-            showConfirm(`Eliminar "${breakItem.title}"`, `¿Seguro que quieres eliminar el descanso global "${breakItem.title}" (${breakItem.start} - ${breakItem.end})?`, () => {
+
+            let dayDisplay = "Todos los días";
+            if (breakItem.dayOfWeek !== 'all' && typeof breakItem.dayOfWeek === 'number') {
+                dayDisplay = getDayName(breakItem.dayOfWeek);
+            }
+
+            showConfirm(`Eliminar "${breakItem.title}"`, `¿Seguro que quieres eliminar el descanso global "${breakItem.title}" (${breakItem.start} - ${breakItem.end}, ${dayDisplay})?`, () => {
                 appData.globalNonAvailability = appData.globalNonAvailability.filter(b => b.id !== idToRemove);
-                addLog("Descanso Global Eliminado", `Título: ${breakItem.title}, Horario: ${breakItem.start} - ${breakItem.end}`);
+                addLog("Descanso Global Eliminado", `Título: ${breakItem.title}, Horario: ${breakItem.start} - ${breakItem.end}, Día: ${dayDisplay}`);
                 renderGlobalNonAvailabilityList();
                 showNotification(`Descanso global "${breakItem.title}" eliminado.`, "success");
                 renderCalendar();
@@ -1012,10 +1042,10 @@ function addGlobalBreak() {
                 });
             });
             if (candidatesPerSlotInput) {
-                candidatesPerSlotInput.addEventListener('input', updateCandidatesPerSlotMax); // To validate as user types
+                candidatesPerSlotInput.addEventListener('input', updateCandidatesPerSlotMax); 
             }
 
-            updateCandidatesPerSlotMax(); // Initial call
+            updateCandidatesPerSlotMax(); 
 
             if (eventData && eventData.type === 'slots') {
                 renderSlotsInPanel(dateStr, document.getElementById('slotListContainer'));
@@ -1038,7 +1068,7 @@ function addGlobalBreak() {
 
             let contentHTML = `
                 <p class="text-sm text-slate-600 mb-3 sm:mb-4">Aplicar acciones a los ${appData.selectedDates.length} días seleccionados.</p>
-                <div>${formMessage}${getAvailabilityFormHTML(firstSelectedDate, firstDayEvent, true, false)}</div> 
+                <div>${formMessage}${getAvailabilityFormHTML(firstSelectedDate, firstDayEvent, true, false)}</div>    
                 <div class="mt-4 sm:mt-6 space-y-2 border-t border-slate-200 pt-3 sm:pt-5">
                     <button id="markSelectedDaysOffBtn" class="btn btn-danger w-full">${ICONS.calendarOff} Marcar Libres</button>
                     <button id="removeSelectedDaysOffBtn" class="btn btn-warning w-full">${ICONS.calendarOn} Quitar Estado Libre</button>
@@ -1086,7 +1116,7 @@ function addGlobalBreak() {
             if (candidatesPerSlotInput) {
                 candidatesPerSlotInput.addEventListener('input', updateCandidatesPerSlotMax);
             }
-            updateCandidatesPerSlotMax(); // Initial call
+            updateCandidatesPerSlotMax(); 
         }
 
         function getAvailabilityFormHTML(dateStr, eventData, isMultiDay = false, disableGenerateButton = false) {
@@ -1150,7 +1180,6 @@ function addGlobalBreak() {
             const slotDuration = parseInt(slotDurationEl.value);
             let maxCandidates;
 
-            // Calcular maxCandidates dinámicamente
             switch (interviewType) {
                 case 'presencial':
                 case 'telefónica':
@@ -1177,12 +1206,10 @@ function addGlobalBreak() {
 
             candidatesInputEl.min = 1;
             candidatesInputEl.max = maxCandidates;
-            candidatesInputEl.placeholder = `Máx: ${maxCandidates}`; // Placeholder actualizado
+            candidatesInputEl.placeholder = `Máx: ${maxCandidates}`; 
 
             const currentValueString = candidatesInputEl.value;
 
-            // Si el campo está vacío (el usuario pudo haber borrado el contenido para escribir uno nuevo)
-            // no hacemos nada en este evento 'input'. Esto permite que el usuario termine de escribir.
             if (currentValueString === "") {
                 return;
             }
@@ -1190,26 +1217,21 @@ function addGlobalBreak() {
             let currentCandidates = parseInt(currentValueString);
 
             if (isNaN(currentCandidates) || currentCandidates < 1) {
-                // Si no es un número o es menor que 1, lo forzamos a 1.
-                // Evitar reasignar si ya es "1" para no afectar el cursor.
                 if (candidatesInputEl.value !== "1") {
                     candidatesInputEl.value = 1;
                 }
             } else if (currentCandidates > maxCandidates) {
-                // Si es mayor que el máximo, lo ajustamos al máximo.
-                // Evitar reasignar si ya es el valor máximo.
                 const maxCandidatesString = String(maxCandidates);
                 if (candidatesInputEl.value !== maxCandidatesString) {
                     candidatesInputEl.value = maxCandidatesString;
                 }
-                // Notificar solo si el valor original que el usuario intentó poner era realmente mayor.
                 if (parseInt(currentValueString) > maxCandidates) {
                     showNotification(`Se ajustó el número de candidatos al máximo permitido (${maxCandidates}) para esta configuración.`, "info", 4000);
                 }
             }
         }
 
-
+        // MODIFIED: To consider dayOfWeek for global breaks when rendering slots in panel
         function renderSlotsInPanel(dateStr, container) {
             if (!container) return;
             container.innerHTML = '';
@@ -1221,7 +1243,7 @@ function addGlobalBreak() {
             }
 
             const localDate = getLocalDateFromStr(dateStr);
-            const dayOfWeek = localDate.getDay();
+            const dayOfWeek = localDate.getDay(); // Day of the week for the current dateStr
             const weeklyDaySetting = appData.workingHours[dayOfWeek];
             const daySpecificSetting = eventData?.daySettings;
 
@@ -1231,12 +1253,19 @@ function addGlobalBreak() {
 
             if (effectiveStartTime && effectiveEndTime) {
                 appData.globalNonAvailability.forEach(breakItem => {
-                    const breakStartMins = parseTime(breakItem.start);
-                    const breakEndMins = parseTime(breakItem.end);
-                    const dayStartMins = parseTime(effectiveStartTime);
-                    const dayEndMins = parseTime(effectiveEndTime);
-                    if (Math.max(dayStartMins, breakStartMins) < Math.min(dayEndMins, breakEndMins)) {
-                        displayItems.push({ itemType: 'globalBreak', startTime: breakItem.start, endTime: breakItem.end, title: breakItem.title, id: breakItem.id });
+                    // Check if the global break applies to this specific day of the week
+                    const breakAppliesToThisDayOfWeek = breakItem.dayOfWeek === 'all' ||
+                                                      (typeof breakItem.dayOfWeek === 'number' && breakItem.dayOfWeek === dayOfWeek);
+                    
+                    if (breakAppliesToThisDayOfWeek) {
+                        const breakStartMins = parseTime(breakItem.start);
+                        const breakEndMins = parseTime(breakItem.end);
+                        const dayStartMins = parseTime(effectiveStartTime);
+                        const dayEndMins = parseTime(effectiveEndTime);
+                        // Check for overlap
+                        if (Math.max(dayStartMins, breakStartMins) < Math.min(dayEndMins, breakEndMins)) {
+                            displayItems.push({ itemType: 'globalBreak', startTime: breakItem.start, endTime: breakItem.end, title: breakItem.title, id: breakItem.id });
+                        }
                     }
                 });
             }
@@ -1264,7 +1293,7 @@ function addGlobalBreak() {
                             <p class="text-xxs sm:text-xs font-medium text-green-700">Disponible</p>
                         </div>
                         <div class="slot-actions flex flex-wrap gap-1 items-center mt-1 sm:mt-0">
-                             <button data-slot-id="${item.id}" data-date-str="${dateStr}" class="btn-cancel-slot btn btn-danger text-xxs px-1.5 py-0.5 sm:text-xs sm:px-2 sm:py-1">${ICONS.trash}</button>
+                                <button data-slot-id="${item.id}" data-date-str="${dateStr}" class="btn-cancel-slot btn btn-danger text-xxs px-1.5 py-0.5 sm:text-xs sm:px-2 sm:py-1">${ICONS.trash}</button>
                         </div>
                     `;
                 } else if (item.itemType === 'globalBreak') {
@@ -1294,7 +1323,7 @@ function addGlobalBreak() {
             const isShiftPressed = event.shiftKey;
 
             if (isShiftPressed && appData.lastSelectedDate && appData.lastSelectedDate !== dateStr) {
-                appData.selectedDates = []; // Start fresh for range selection
+                appData.selectedDates = []; 
                 const d1LocalDate = getLocalDateFromStr(appData.lastSelectedDate);
                 const d2LocalDate = getLocalDateFromStr(dateStr);
 
@@ -1305,9 +1334,9 @@ function addGlobalBreak() {
                     appData.selectedDates.push(formatDate(d));
                 }
                 addLog("Selección de Rango", `Días desde ${formatDate(start)} hasta ${formatDate(end)} seleccionados.`);
-            } else { // Not a shift-click or no valid anchor for shift-click
+            } else { 
                 const index = appData.selectedDates.indexOf(dateStr);
-                if (isCtrlPressed) { // Ctrl/Cmd click explicitly adds/removes
+                if (isCtrlPressed) { 
                     if (index > -1) {
                         appData.selectedDates.splice(index, 1);
                         addLog("Día Deseleccionado (Ctrl/Cmd)", `Día: ${dateStr}`);
@@ -1315,21 +1344,21 @@ function addGlobalBreak() {
                         appData.selectedDates.push(dateStr);
                         addLog("Día Seleccionado (Ctrl/Cmd)", `Día: ${dateStr}`);
                     }
-                } else { // Simple tap/click (no modifiers)
-                    if (appData.selectedDates.length === 1 && appData.selectedDates[0] === dateStr && !isShiftPressed) { // If only this day is selected, deselect it
+                } else { 
+                    if (appData.selectedDates.length === 1 && appData.selectedDates[0] === dateStr && !isShiftPressed) { 
                         appData.selectedDates = [];
                         addLog("Día Deseleccionado (Tap)", `Día: ${dateStr}`);
-                    } else if (index > -1 && appData.selectedDates.length > 1) { // If part of multi-selection, remove it
+                    } else if (index > -1 && appData.selectedDates.length > 1) { 
                         appData.selectedDates.splice(index, 1);
                         addLog("Día Deseleccionado de Múltiples (Tap)", `Día: ${dateStr}`);
                     }
-                    else if (index === -1) { // If not selected, add it to selection (or start new selection)
-                        if (!isShiftPressed) appData.selectedDates = [dateStr]; // Clears previous multi-selection if not shift
-                        else appData.selectedDates.push(dateStr); // Add to existing if shift was involved (though handled above)
+                    else if (index === -1) { 
+                        if (!isShiftPressed) appData.selectedDates = [dateStr]; 
+                        else appData.selectedDates.push(dateStr); 
                         addLog("Día Seleccionado (Tap)", `Día: ${dateStr}`);
                     }
                 }
-                appData.lastSelectedDate = dateStr; // Always update last selected for next potential shift-click
+                appData.lastSelectedDate = dateStr; 
             }
 
             if (appData.selectedDates.length === 0) {
@@ -1366,7 +1395,7 @@ function addGlobalBreak() {
                     newSelectedDates.push(dateStr);
                 }
             }
-            appData.selectedDates = [...new Set([...appData.selectedDates, ...newSelectedDates])]; // Merge without duplicates
+            appData.selectedDates = [...new Set([...appData.selectedDates, ...newSelectedDates])]; 
             if (appData.selectedDates.length > 0) {
                 appData.lastSelectedDate = appData.selectedDates[appData.selectedDates.length - 1];
             }
@@ -1383,7 +1412,7 @@ function addGlobalBreak() {
             updateSidePanel();
         });
 
-
+        // MODIFIED: To consider dayOfWeek for global breaks when generating slots
         function saveAvailabilityFromPanel(datesToProcess) {
             if (datesToProcess.length === 0) {
                 showNotification("No hay días seleccionados para generar horarios.", "warning");
@@ -1417,7 +1446,7 @@ function addGlobalBreak() {
                 }
 
                 const localDate = getLocalDateFromStr(dateStr);
-                const dayOfWeek = localDate.getDay();
+                const dayOfWeek = localDate.getDay(); // Day of the week for the current dateStr
                 const weeklySetting = appData.workingHours[dayOfWeek];
 
                 let dayStartToUse, dayEndToUse;
@@ -1461,10 +1490,17 @@ function addGlobalBreak() {
 
                         let isGlobalBreak = false;
                         for (const gnb of appData.globalNonAvailability) {
-                            const gnbStart = parseTime(gnb.start);
-                            const gnbEnd = parseTime(gnb.end);
-                            if (Math.max(slotStart, gnbStart) < Math.min(slotEnd, gnbEnd)) {
-                                isGlobalBreak = true; break;
+                            // Check if the global break applies to this specific day of the week
+                            const breakAppliesToThisDayOfWeek = gnb.dayOfWeek === 'all' ||
+                                                              (typeof gnb.dayOfWeek === 'number' && gnb.dayOfWeek === dayOfWeek);
+
+                            if (breakAppliesToThisDayOfWeek) {
+                                const gnbStart = parseTime(gnb.start);
+                                const gnbEnd = parseTime(gnb.end);
+                                // Check for overlap
+                                if (Math.max(slotStart, gnbStart) < Math.min(slotEnd, gnbEnd)) {
+                                    isGlobalBreak = true; break;
+                                }
                             }
                         }
                         if (!isGlobalBreak) {
@@ -1474,7 +1510,7 @@ function addGlobalBreak() {
                                 duration: duration,
                                 interviewType: type,
                                 status: 'available',
-                                candidates: candidatesPerSlot // Store candidates per slot
+                                candidates: candidatesPerSlot 
                             });
                             totalSlotsGeneratedOverall++;
                         }
@@ -1484,7 +1520,7 @@ function addGlobalBreak() {
                     const daySettingsToStore = {
                         slotDurationMinutes: duration,
                         interviewType: type,
-                        candidatesPerSlot: candidatesPerSlot // Store in daySettings
+                        candidatesPerSlot: candidatesPerSlot 
                     };
                     if (isCustomOverrideForThisDay) {
                         daySettingsToStore.dayStartTime = formPanelStartTime;
@@ -1618,7 +1654,6 @@ function addGlobalBreak() {
                     appData.events[dateStr].slots.forEach(slot => {
                         slot.id = generateUUID();
                         slot.status = 'available';
-                        // candidatesPerSlot should be part of copiedDayData.slots items if saved correctly
                     });
                 }
                 count++;
@@ -1675,79 +1710,52 @@ function addGlobalBreak() {
                         content.style.maxHeight = '0px';
                         if (icon) {
                             icon.textContent = '+';
-                            // Opcional: icon.classList.remove('rotate-180');
                         }
                     } else {
-                        // Para la animación, necesitas que el contenido tenga una altura intrínseca
-                        // o usar un valor suficientemente grande para max-height.
-                        // content.scrollHeight puede ser problemático si el contenido está cambiando.
-                        content.style.maxHeight = content.scrollHeight + 'px'; // O un valor fijo grande como '1000px' si el contenido es muy variable
+                        content.style.maxHeight = content.scrollHeight + 'px'; 
                         if (icon) {
                             icon.textContent = '-';
-                            // Opcional: icon.classList.add('rotate-180');
                         }
-                        // Si otros acordeones deben cerrarse cuando uno se abre (comportamiento de acordeón exclusivo):
-                        // document.querySelectorAll('.accordion-content').forEach(otherContent => {
-                        //     if (otherContent !== content) {
-                        //         otherContent.style.maxHeight = '0px';
-                        //         const otherIcon = otherContent.previousElementSibling.querySelector('.accordion-icon');
-                        //         if (otherIcon) otherIcon.textContent = '+';
-                        //     }
-                        // });
                     }
                 });
             });
 
-            // Asegurar que el contenido de los acordeones tenga una transición suave
-            // y que el estado inicial (abierto/cerrado) se maneje.
             document.querySelectorAll('.accordion-content').forEach(content => {
                 content.style.transition = 'max-height 0.3s ease-in-out';
-                // El estado inicial (abierto/cerrado) ya está definido en el HTML por `style="max-height: ...;"`
             });
         }
         
 
         function handleGlobalBreakStartTimeChange() {
-    if (!globalBreakStartTimeSelectEl || !globalBreakEndTimeSelectEl) return;
+            if (!globalBreakStartTimeSelectEl || !globalBreakEndTimeSelectEl) return;
 
-    const startTimeStr = globalBreakStartTimeSelectEl.value;
-    if (!startTimeStr) { 
-        // Si no hay valor de inicio, podrías resetear el de fin o dejarlo como está.
-        // Por ahora, si el de inicio está vacío, no hacemos nada con el de fin.
-        return;
-    }
+            const startTimeStr = globalBreakStartTimeSelectEl.value;
+            if (!startTimeStr) {    
+                return;
+            }
 
-    let startTimeInMinutes = parseTime(startTimeStr);
-    let endTimeInMinutes = startTimeInMinutes + 60; // Añadir 1 hora (60 minutos)
+            let startTimeInMinutes = parseTime(startTimeStr);
+            let endTimeInMinutes = startTimeInMinutes + 60; 
 
-    // Formatear la hora de fin. El módulo (24*60) maneja el cruce de medianoche (ej. 23:30 + 1h -> 00:30)
-    const formattedEndTime = formatTime(endTimeInMinutes % (24 * 60)); 
-    
-    // Establecer el valor en el select de hora de fin.
-    // Asumimos que populateTimeSelectsForWorkingHours ya llenó este select con las opciones correctas (:00, :30)
-    globalBreakEndTimeSelectEl.value = formattedEndTime;
+            const formattedEndTime = formatTime(endTimeInMinutes % (24 * 60));    
+            
+            globalBreakEndTimeSelectEl.value = formattedEndTime;
 
-    // Pequeña validación extra: si por alguna razón la hora de fin calculada es anterior o igual a la de inicio
-    // (después de la normalización por cruce de medianoche), ajustamos a un mínimo de 30 min de descanso.
-    // Esto es una salvaguarda, no debería ocurrir con una simple suma de 60min si la hora de inicio es válida.
-    if (parseTime(globalBreakEndTimeSelectEl.value) <= startTimeInMinutes) {
-        // Esta condición podría ser compleja si startTimeStr es tarde (ej. "23:30", donde "00:30" es correcto y menor numéricamente)
-        // Vamos a refinarla para que solo actúe si no es un cruce de medianoche válido
-        const endValTime = parseTime(globalBreakEndTimeSelectEl.value);
-        // Si la hora de fin es menor que la de inicio Y la hora de inicio no fue tan tarde como para que un cruce sea normal
-        if (endValTime <= startTimeInMinutes && startTimeInMinutes < parseTime("23:00")) { 
-            let safeEndTimeInMinutes = startTimeInMinutes + 30; // Mínimo 30 mins
-            globalBreakEndTimeSelectEl.value = formatTime(safeEndTimeInMinutes % (24*60));
+            if (parseTime(globalBreakEndTimeSelectEl.value) <= startTimeInMinutes) {
+                const endValTime = parseTime(globalBreakEndTimeSelectEl.value);
+                if (endValTime <= startTimeInMinutes && startTimeInMinutes < parseTime("23:00")) {    
+                    let safeEndTimeInMinutes = startTimeInMinutes + 30; 
+                    globalBreakEndTimeSelectEl.value = formatTime(safeEndTimeInMinutes % (24*60));
+                }
+            }
         }
-    }
-}
 
 
 
         // --- JSON EXPORT ---
         function exportConfigurationToJson() {
             const dataToExport = {
-                version: "1.4",
+                version: "1.5", // MODIFIED: Version incremented
                 timestamp: new Date().toISOString(),
                 horarioLaboralSemanal: appData.workingHours,
                 configuracionEventosDiarios: appData.events,
@@ -1778,23 +1786,19 @@ function addGlobalBreak() {
             addGlobalBreakBtn.addEventListener('click', addGlobalBreak);
         }
 
-    // Poblar y configurar los selects para Descansos Globales
-    if (globalBreakStartTimeSelectEl && globalBreakEndTimeSelectEl) {
-        populateTimeSelectsForWorkingHours(globalBreakStartTimeSelectEl, "12:00");
-        // La hora de fin inicial se establecerá automáticamente al disparar 'change' o por handleGlobalBreakStartTimeChange
-        // Así que podemos popularlo y luego dejar que el handler lo ajuste.
-        populateTimeSelectsForWorkingHours(globalBreakEndTimeSelectEl, "13:00"); 
-        
-        // Configurar el valor inicial de fin basado en el de inicio
-        handleGlobalBreakStartTimeChange(); // Llama para establecer el fin inicial correctamente
+        if (globalBreakStartTimeSelectEl && globalBreakEndTimeSelectEl) {
+            populateTimeSelectsForWorkingHours(globalBreakStartTimeSelectEl, "12:00");
+            populateTimeSelectsForWorkingHours(globalBreakEndTimeSelectEl, "13:00");    
+            
+            handleGlobalBreakStartTimeChange(); 
 
-        globalBreakStartTimeSelectEl.addEventListener('change', handleGlobalBreakStartTimeChange);
-    }
-    
-    addLog("Aplicación Iniciada", `Versión del planificador cargada.`);
-    renderCalendar();
-    updateSidePanel(); 
-    initializeAccordions(); // Asumo que esta ya la tienes de la respuesta anterior
+            globalBreakStartTimeSelectEl.addEventListener('change', handleGlobalBreakStartTimeChange);
+        }
+        
+        addLog("Aplicación Iniciada", `Versión del planificador cargada.`);
+        renderCalendar();
+        updateSidePanel();    
+        initializeAccordions(); 
     </script>
 </body>
 
