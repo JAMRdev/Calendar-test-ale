@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planificador de Entrevistas Avanzado</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9; /* Tailwind slate-100 */
+            overflow-x: hidden;
+        }
+        .calendar-day {
+            min-height: 80px; 
+        }
+        @media (min-width: 640px) { /* sm breakpoint */
+            .calendar-day {
+                min-height: 100px;
+            }
+        }
+        .calendar-day:hover {
+            background-color: #e2e8f0; 
+        }
+        .calendar-day.selected {
+            background-color: #c7d2fe; 
+            border: 2px solid #4f46e5; 
+            box-shadow: 0 0 0 2px #c7d2fe;
+        }
+        .calendar-day.day-off {
+            background-color: #ffe4e6; 
+            color: #be123c; 
+        }
+        .calendar-day.day-off.selected {
+            background-color: #fecdd3; 
+            border: 2px solid #e11d48; 
+        }
+        .slot {
+            border: 1px solid #e2e8f0; 
+            padding: 0.5rem 0.75rem; 
+            margin-bottom: 0.5rem; 
+            border-radius: 0.5rem; 
+        }
+        .slot-available { background-color: #dcfce7; border-left: 4px solid #22c55e; } 
+        .slot-global-break { background-color: #e2e8f0; border-left: 4px solid #64748b; color: #334155; } 
+
+        /* Styles for scrollbars, applied if overflow is active */
+        .scrollable-area::-webkit-scrollbar { width: 6px; }
+        .scrollable-area::-webkit-scrollbar-track { background: #f8fafc; border-radius: 10px; } 
+        .scrollable-area::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; } 
+        .scrollable-area::-webkit-scrollbar-thumb:hover { background: #64748b; } 
+
+        #sidePanel {
+            max-height: calc(100vh - 4rem); 
+            overflow-y: auto; /* Main panel scroll */
+            scrollbar-width: thin;
+            scrollbar-color: #94a3b8 #f8fafc;
+        }
+        #logsDisplayContainer {
+             max-height: 300px; /* Max height for logs, overflow handled by class */
+        }
+
+        .modal {
+            display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%;
+            overflow: auto; background-color: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center;
+            padding: 1rem; 
+        }
+        .modal-content {
+            background-color: #ffffff; margin: auto; padding: 1.5rem; 
+            border-radius: 0.75rem; 
+            width: 100%; 
+            max-width: 500px; 
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); 
+        }
+        @media (min-width: 640px) { 
+            .modal-content {
+                padding: 2rem; 
+            }
+        }
+        #notificationArea {
+            position: fixed; top: 1rem; left: 1rem; right: 1rem; 
+            transform: none; 
+            z-index: 1000;
+            max-width: 600px; 
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .btn {
+            padding: 0.5rem 1rem; 
+            border-radius: 0.5rem; 
+            font-weight: 500; 
+            transition: background-color 0.2s, box-shadow 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.375rem; 
+            line-height: 1.25rem; 
+        }
+        .btn-primary { background-color: #4f46e5; color: white; } 
+        .btn-primary:hover { background-color: #4338ca; box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.39); } 
+        .btn-danger { background-color: #e11d48; color: white; } 
+        .btn-danger:hover { background-color: #be123c; box-shadow: 0 4px 14px 0 rgba(225, 29, 72, 0.39); } 
+        .btn-warning { background-color: #f59e0b; color: white; } 
+        .btn-warning:hover { background-color: #d97706; box-shadow: 0 4px 14px 0 rgba(245, 158, 11, 0.39); } 
+        .btn-success { background-color: #16a34a; color: white; } 
+        .btn-success:hover { background-color: #15803d; box-shadow: 0 4px 14px 0 rgba(22, 163, 74, 0.39); } 
+        .btn-info { background-color: #0ea5e9; color: white; } 
+        .btn-info:hover { background-color: #0284c7; box-shadow: 0 4px 14px 0 rgba(14, 165, 233, 0.39); } 
+        .btn-secondary { background-color: #64748b; color: white; } 
+        .btn-secondary:hover { background-color: #475569; box-shadow: 0 4px 14px 0 rgba(100, 116, 139, 0.39); } 
+
+        .icon-sm { width: 1rem; height: 1rem; } 
+        .log-entry {
+            padding: 0.5rem 0.75rem;
+            border-bottom: 1px solid #e2e8f0; /* slate-200 */
+            font-size: 0.8rem; /* text-xs */
+            line-height: 1.2;
+        }
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+        .log-timestamp {
+            color: #64748b; /* slate-500 */
+            font-size: 0.7rem; /* smaller */
+            margin-right: 0.5rem;
+        }
+        .log-action {
+            font-weight: 500; /* medium */
+            color: #1e293b; /* slate-800 */
+        }
+        .log-details {
+            color: #475569; /* slate-600 */
+            margin-left: 0.5rem;
+            word-break: break-word;
+        }
+    </style>
+</head>
+<body class="antialiased text-slate-800">
+    <div id="notificationArea"></div>
+
+    <div class="container mx-auto p-2 sm:p-4 md:p-6 lg:p-8">
+        <header class="mb-6 sm:mb-8 md:mb-10 text-center">
+            <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-700">Planificador de Entrevistas</h1>
+            <p class="text-slate-500 mt-2 sm:mt-3 text-base sm:text-lg">Gestiona tu disponibilidad de forma eficiente.</p>
+        </header>
+        
+        <div class="flex flex-col md:flex-row gap-4 md:gap-6 lg:gap-8">
+            <div class="w-full md:w-2/3 lg:w-3/4">
+                <div class="flex flex-col sm:flex-row justify-between items-center mb-4 sm:mb-6 bg-white p-3 sm:p-4 rounded-xl shadow-lg">
+                    <button id="prevMonthBtn" class="btn btn-primary w-full sm:w-auto mb-2 sm:mb-0 text-xs sm:text-sm">&lt; Mes Anterior</button>
+                    <h2 id="currentMonthYear" class="text-xl sm:text-2xl md:text-3xl font-semibold text-slate-700 order-first sm:order-none mb-2 sm:mb-0"></h2>
+                    <button id="nextMonthBtn" class="btn btn-primary w-full sm:w-auto text-xs sm:text-sm">Mes Siguiente &gt;</button>
+                </div>
+                <div id="calendarGrid" class="grid grid-cols-7 gap-1 sm:gap-1.5 bg-white p-2 sm:p-3 rounded-xl shadow-xl">
+                    </div>
+                 <p class="mt-2 sm:mt-3 text-xs text-slate-500 text-center">Usa Shift+Click para rango, Ctrl/Cmd+Click para múltiple.</p>
+            </div>
+
+            <div id="sidePanel" class="w-full md:w-1/3 lg:w-1/4 bg-white p-4 sm:p-5 rounded-xl shadow-xl self-start md:sticky md:top-6 scrollable-area">
+                <h3 id="sidePanelTitle" class="text-xl sm:text-2xl font-semibold mb-4 sm:mb-5 text-slate-700 border-b border-slate-200 pb-2 sm:pb-3">Detalles y Acciones</h3>
+                <div id="sidePanelContent" class="space-y-4 sm:space-y-5">
+                    </div>
+                <div id="globalBreaksContainer" class="mt-6 sm:mt-8 border-t border-slate-200 pt-4 sm:pt-6">
+                     <h4 class="text-lg font-semibold mb-3 text-slate-600">Descansos Globales</h4>
+                     <div id="globalNonAvailabilityList" class="space-y-2 sm:space-y-2.5 text-sm mb-3 sm:mb-4"></div>
+                     <div class="space-y-2.5 sm:space-y-3 p-3 bg-slate-50 rounded-lg">
+                         <input type="time" id="globalBreakStartTime" class="w-full p-2 border border-slate-300 rounded-md text-sm" value="12:00">
+                         <input type="time" id="globalBreakEndTime" class="w-full p-2 border border-slate-300 rounded-md text-sm" value="13:00">
+                         <input type="text" id="globalBreakTitle" class="w-full p-2 border border-slate-300 rounded-md text-sm" placeholder="Ej: Almuerzo">
+                         <button id="addGlobalBreakBtn" class="btn btn-info w-full">Añadir Descanso</button>
+                     </div>
+                </div>
+                <div class="mt-6 sm:mt-8 border-t border-slate-200 pt-4 sm:pt-6">
+                    <h4 class="text-lg font-semibold mb-3 text-slate-600">Herramientas</h4>
+                    <button id="exportJsonBtn" class="btn btn-secondary w-full">Exportar Configuración (JSON)</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="logsSection" class="mt-8 sm:mt-10 md:mt-12 bg-white p-4 sm:p-6 rounded-xl shadow-xl">
+            <div class="flex justify-between items-center mb-3 sm:mb-4">
+                <h3 class="text-xl sm:text-2xl font-semibold text-slate-700">Registro de Actividad</h3>
+                <button id="clearLogsBtn" class="btn btn-warning text-xs px-3 py-1.5">Limpiar Logs</button>
+            </div>
+            <div id="logsDisplayContainer" class="scrollable-area overflow-y-auto border border-slate-200 rounded-lg bg-slate-50">
+                </div>
+        </div>
+    </div>
+
+    <div id="confirmModal" class="modal hidden">
+        <div class="modal-content">
+            <h3 class="text-lg sm:text-xl font-semibold mb-4 sm:mb-5" id="confirmTitle">Confirmar Acción</h3>
+            <p id="confirmMessage" class="mb-6 sm:mb-8 text-slate-600 text-sm sm:text-base">¿Estás seguro?</p>
+            <div class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
+                <button id="cancelConfirm" class="btn btn-secondary w-full sm:w-auto">Cancelar</button>
+                <button id="executeConfirm" class="btn btn-danger w-full sm:w-auto">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- ICONS (SVG) ---
+        const ICONS = {
+            plus: '<svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>',
+            trash: '<svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12.56 0c1.153 0 2.243.096 3.222.261m3.222.261L12 5.290M9.25 5.290L6.73 5.187M16.25 5.290L13.73 5.187m0 0V2.25m0 0H8.25m4.5 0H12m0 0V2.25m0 0h-3.75m3.75 0h3.75M9 12l3 3m0 0l3-3m-3 3v6m0-6H6m3 0h3" /></svg>',
+            calendarOff: '<svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-3.75h.008v.008H12v-.008zM12 12.75h.008v.008H12v-.008zM9.75 15h.008v.008H9.75v-.008zM7.5 12.75h.008v.008H7.5v-.008zm4.5 2.25h.008v.008H12v-.008zm2.25-2.25h.008v.008H14.25v-.008zm0 2.25h.008v.008H14.25v-.008zm2.25-2.25h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5v-.008zM3.051 3.051A20.949 20.949 0 0112 2.25c2.63 0 5.12.483 7.449 1.354m-14.898 0A20.991 20.991 0 0012 21.75c2.63 0 5.12-.483 7.449-1.354M2.25 12c0-2.63.483-5.12 1.354-7.449M20.396 4.551A20.991 20.991 0 0121.75 12c0 2.63-.483 5.12-1.354 7.449" /></svg>',
+            calendarOn: '<svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>',
+            copy: '<svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 4.625a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg>',
+            paste: '<svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75c0-.231-.035-.454-.1-.664M6.75 7.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V16.5" /></svg>',
+            download: '<svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>'
+        };
+        
+        // --- APPLICATION STATE ---
+        const appData = {
+            currentDate: new Date(),
+            selectedDates: [], 
+            lastSelectedDate: null, 
+            events: {}, 
+            globalNonAvailability: [
+                { id: 'gnp_lunch', start: "12:00", end: "13:00", title: "Almuerzo (Global)" }
+            ],
+            copiedDayData: null,
+            logs: [] 
+        };
+
+        // --- DOM ELEMENTS ---
+        const calendarGrid = document.getElementById('calendarGrid');
+        const currentMonthYearEl = document.getElementById('currentMonthYear');
+        const prevMonthBtn = document.getElementById('prevMonthBtn');
+        const nextMonthBtn = document.getElementById('nextMonthBtn');
+        const sidePanelTitle = document.getElementById('sidePanelTitle');
+        const sidePanelContent = document.getElementById('sidePanelContent');
+        const globalNonAvailabilityListEl = document.getElementById('globalNonAvailabilityList');
+        const addGlobalBreakBtn = document.getElementById('addGlobalBreakBtn');
+        const exportJsonBtn = document.getElementById('exportJsonBtn');
+        const logsDisplayContainer = document.getElementById('logsDisplayContainer');
+        const clearLogsBtn = document.getElementById('clearLogsBtn');
+        const confirmModal = document.getElementById('confirmModal');
+        const confirmTitleEl = document.getElementById('confirmTitle');
+        const confirmMessageEl = document.getElementById('confirmMessage');
+        let confirmCallback = null;
+        const notificationArea = document.getElementById('notificationArea');
+
+        // --- LOGGING ---
+        function addLog(action, details = "") {
+            const timestamp = new Date();
+            const logEntry = { 
+                timestamp: timestamp.toLocaleString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit', day: '2-digit', month: '2-digit' }), 
+                action, 
+                details 
+            };
+            appData.logs.unshift(logEntry); 
+            if (appData.logs.length > 100) { 
+                appData.logs.pop();
+            }
+            renderLogs();
+        }
+
+        function renderLogs() {
+            if (!logsDisplayContainer) return;
+            logsDisplayContainer.innerHTML = '';
+            if (appData.logs.length === 0) {
+                logsDisplayContainer.innerHTML = '<p class="p-4 text-center text-slate-500 text-sm italic">No hay actividad registrada aún.</p>';
+                return;
+            }
+            appData.logs.forEach(log => {
+                const logEl = document.createElement('div');
+                logEl.className = 'log-entry flex items-start';
+                logEl.innerHTML = `
+                    <span class="log-timestamp">${log.timestamp}</span>
+                    <div>
+                        <span class="log-action">${log.action}</span>
+                        ${log.details ? `<span class="log-details text-xs block">${log.details}</span>` : ''}
+                    </div>
+                `;
+                logsDisplayContainer.appendChild(logEl);
+            });
+        }
+        
+        clearLogsBtn.addEventListener('click', () => {
+            showConfirm("Limpiar Logs", "¿Estás seguro de que quieres borrar todos los registros de actividad?", () => {
+                appData.logs = [];
+                renderLogs();
+                addLog("Logs Limpiados", "Todos los registros de actividad han sido borrados.");
+                showNotification("Logs limpiados.", "success");
+            });
+        });
+
+
+        // --- UTILITY FUNCTIONS ---
+        function formatDate(date) {
+            const d = new Date(date);
+            let month = '' + (d.getMonth() + 1);
+            let day = '' + d.getDate();
+            const year = d.getFullYear();
+            if (month.length < 2) month = '0' + month;
+            if (day.length < 2) day = '0' + day;
+            return [year, month, day].join('-');
+        }
+
+        function generateUUID() { return 'slot_' + Math.random().toString(36).substr(2, 9) + Date.now(); }
+        function parseTime(timeStr) { const [h, m] = timeStr.split(':').map(Number); return h * 60 + m; }
+        function formatTime(minutes) { return `${String(Math.floor(minutes/60)).padStart(2,'0')}:${String(minutes%60).padStart(2,'0')}`; }
+
+        function showNotification(message, type = 'info', duration = 3500) {
+            const notification = document.createElement('div');
+            let bgColor = 'bg-sky-500'; 
+            if (type === 'success') bgColor = 'bg-green-500';
+            else if (type === 'error') bgColor = 'bg-rose-500';
+            else if (type === 'warning') bgColor = 'bg-amber-500';
+            
+            notification.className = `p-3 rounded-lg shadow-lg text-white text-sm mb-2 ${bgColor}`;
+            notification.textContent = message;
+            notificationArea.appendChild(notification);
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transition = 'opacity 0.5s ease-out';
+                setTimeout(() => notification.remove(), 500);
+            }, duration);
+        }
+        
+        // --- CALENDAR RENDERING ---
+        function renderCalendar() {
+            calendarGrid.innerHTML = '';
+            const dayHeaders = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+            dayHeaders.forEach(header => {
+                const headerEl = document.createElement('div');
+                headerEl.className = 'text-center font-semibold text-slate-600 py-2 sm:py-3 text-xs sm:text-sm';
+                headerEl.textContent = header;
+                calendarGrid.appendChild(headerEl);
+            });
+
+            const year = appData.currentDate.getFullYear();
+            const month = appData.currentDate.getMonth();
+            currentMonthYearEl.textContent = `${appData.currentDate.toLocaleString('es-ES', { month: 'long' })} ${year}`;
+
+            const firstDayOfMonth = new Date(year, month, 1);
+            const lastDayOfMonth = new Date(year, month + 1, 0);
+            const daysInMonth = lastDayOfMonth.getDate();
+            const startingDay = firstDayOfMonth.getDay();
+
+            for (let i = 0; i < startingDay; i++) {
+                calendarGrid.appendChild(document.createElement('div')).className = 'border border-slate-200 bg-slate-50 rounded-md';
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayCell = document.createElement('div');
+                const dateStr = formatDate(new Date(year, month, day));
+                dayCell.className = 'calendar-day border border-slate-200 p-1.5 sm:p-2 cursor-pointer flex flex-col items-center justify-start relative text-xs rounded-md';
+                if (formatDate(new Date()) === dateStr && !appData.selectedDates.includes(dateStr) && (!appData.events[dateStr] || appData.events[dateStr].type !== 'day-off')) {
+                     dayCell.classList.add('bg-indigo-50');
+                }
+                if (appData.selectedDates.includes(dateStr)) dayCell.classList.add('selected');
+
+                const dayNumberEl = document.createElement('span');
+                dayNumberEl.className = 'font-bold text-sm sm:text-base mb-0.5 sm:mb-1';
+                dayNumberEl.textContent = day;
+                dayCell.appendChild(dayNumberEl);
+
+                const eventInfoContainer = document.createElement('div');
+                eventInfoContainer.className = 'mt-0.5 sm:mt-1 text-center space-y-0.5 w-full';
+
+                if (appData.events[dateStr]) {
+                    if (appData.events[dateStr].type === 'day-off') {
+                        dayCell.classList.add('day-off');
+                        const dayOffIndicator = document.createElement('span');
+                        dayOffIndicator.className = 'text-xxs sm:text-xs font-medium text-rose-600 block'; 
+                        dayOffIndicator.textContent = 'LIBRE';
+                        eventInfoContainer.appendChild(dayOffIndicator);
+                    } else if (appData.events[dateStr].type === 'slots' && appData.events[dateStr].slots.length > 0) {
+                        const availableSlots = appData.events[dateStr].slots.filter(s => s.status === 'available').length;
+                        if (availableSlots > 0) {
+                             const availableText = document.createElement('span');
+                             availableText.className = 'text-xxs sm:text-xs text-green-600 block';
+                             availableText.textContent = `${availableSlots} disp.`;
+                             eventInfoContainer.appendChild(availableText);
+                        } else if (appData.events[dateStr].slots.length > 0) { 
+                            const configuredIndicator = document.createElement('span');
+                            configuredIndicator.className = 'text-xxs sm:text-xs text-slate-500 block';
+                            configuredIndicator.textContent = 'Config.'; 
+                            eventInfoContainer.appendChild(configuredIndicator);
+                        }
+                    }
+                }
+                dayCell.appendChild(eventInfoContainer);
+                dayCell.addEventListener('click', (event) => handleDayClick(dateStr, event));
+                calendarGrid.appendChild(dayCell);
+            }
+            const totalCells = startingDay + daysInMonth;
+            const remainingCells = (7 - (totalCells % 7)) % 7;
+            for (let i = 0; i < remainingCells; i++) {
+                calendarGrid.appendChild(document.createElement('div')).className = 'border border-slate-200 bg-slate-50 rounded-md';
+            }
+        }
+
+        // --- SIDE PANEL LOGIC ---
+        function updateSidePanel() {
+            renderGlobalNonAvailabilityList(); 
+            sidePanelContent.innerHTML = ''; 
+
+            if (appData.selectedDates.length === 0) {
+                sidePanelTitle.textContent = 'Detalles y Acciones';
+                sidePanelContent.innerHTML = `<p class="text-slate-500 text-sm">Selecciona un día (o varios) en el calendario para ver sus opciones.</p>`;
+            } else if (appData.selectedDates.length === 1) {
+                const dateStr = appData.selectedDates[0];
+                const dateObj = new Date(dateStr + 'T00:00:00Z');
+                sidePanelTitle.textContent = `Día: ${dateObj.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
+                renderSingleDayPanel(dateStr);
+            } else {
+                sidePanelTitle.textContent = `${appData.selectedDates.length} días seleccionados`;
+                renderMultiDayPanel();
+            }
+        }
+
+        function renderGlobalNonAvailabilityList() {
+            if (!globalNonAvailabilityListEl) return;
+            globalNonAvailabilityListEl.innerHTML = '';
+            if (appData.globalNonAvailability.length === 0) {
+                globalNonAvailabilityListEl.innerHTML = '<p class="text-slate-400 text-xs italic">No hay descansos globales definidos.</p>';
+                return;
+            }
+            appData.globalNonAvailability.forEach(breakItem => {
+                const itemEl = document.createElement('div');
+                itemEl.className = 'flex justify-between items-center p-2 bg-slate-100 rounded-md shadow-sm'; 
+                itemEl.innerHTML = `
+                    <div>
+                        <span class="font-medium text-slate-700 text-sm">${breakItem.title}</span>
+                        <span class="text-slate-500 text-xs block">${breakItem.start} - ${breakItem.end}</span>
+                    </div>
+                    <button data-id="${breakItem.id}" class="text-rose-500 hover:text-rose-700 remove-global-break-btn p-1 rounded-full hover:bg-rose-100">
+                        ${ICONS.trash}
+                    </button>`;
+                globalNonAvailabilityListEl.appendChild(itemEl);
+            });
+             document.querySelectorAll('.remove-global-break-btn').forEach(btn => {
+                btn.removeEventListener('click', handleRemoveGlobalBreak); 
+                btn.addEventListener('click', handleRemoveGlobalBreak);
+            });
+        }
+        
+        function handleRemoveGlobalBreak(e) {
+            removeGlobalBreak(e.currentTarget.dataset.id);
+        }
+
+        function addGlobalBreak() {
+            const startInput = document.getElementById('globalBreakStartTime');
+            const endInput = document.getElementById('globalBreakEndTime');
+            const titleInput = document.getElementById('globalBreakTitle');
+            const start = startInput.value;
+            const end = endInput.value;
+            const title = titleInput.value.trim() || 'Descanso';
+
+            if (!start || !end ) {
+                 showNotification("Por favor, especifica hora de inicio y fin para el descanso global.", "error"); return;
+            }
+            if (parseTime(start) >= parseTime(end)) {
+                showNotification("La hora de inicio debe ser anterior a la de fin para el descanso global.", "error"); return;
+            }
+            appData.globalNonAvailability.push({ id: 'gnb_' + Date.now(), start, end, title });
+            addLog("Descanso Global Añadido", `Título: ${title}, Horario: ${start} - ${end}`);
+            renderGlobalNonAvailabilityList(); 
+            showNotification(`Descanso global "${title}" añadido.`, "success");
+            startInput.value = "12:00"; 
+            endInput.value = "13:00";
+            titleInput.value = "";
+            renderCalendar(); 
+            if(appData.selectedDates.length > 0) { 
+                updateSidePanel(); 
+            }
+        }
+
+        function removeGlobalBreak(idToRemove) {
+            const breakItem = appData.globalNonAvailability.find(b => b.id === idToRemove);
+            if (!breakItem) return;
+            showConfirm(`Eliminar "${breakItem.title}"`, `¿Seguro que quieres eliminar el descanso global "${breakItem.title}" (${breakItem.start} - ${breakItem.end})?`, () => {
+                appData.globalNonAvailability = appData.globalNonAvailability.filter(b => b.id !== idToRemove);
+                addLog("Descanso Global Eliminado", `Título: ${breakItem.title}, Horario: ${breakItem.start} - ${breakItem.end}`);
+                renderGlobalNonAvailabilityList(); 
+                showNotification(`Descanso global "${breakItem.title}" eliminado.`, "success");
+                renderCalendar();
+                 if(appData.selectedDates.length > 0) {
+                    updateSidePanel();
+                }
+            });
+        }
+
+        function populateTimeSelects(duration, startTimeEl, endTimeEl, defaultStart, defaultEnd) {
+            startTimeEl.innerHTML = '';
+            endTimeEl.innerHTML = '';
+            const minutesIncrement = parseInt(duration);
+
+            for (let hour = 0; hour < 24; hour++) {
+                for (let minute = 0; minute < 60; minute += minutesIncrement) {
+                    const timeString = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                    const startOption = document.createElement('option');
+                    startOption.value = timeString;
+                    startOption.textContent = timeString;
+                    startTimeEl.appendChild(startOption);
+
+                    const endOption = document.createElement('option');
+                    endOption.value = timeString;
+                    endOption.textContent = timeString;
+                    endTimeEl.appendChild(endOption);
+                }
+            }
+            
+            let lastGeneratedTimeValue = endTimeEl.options[endTimeEl.options.length-1]?.value;
+            if (lastGeneratedTimeValue && lastGeneratedTimeValue !== "23:59" && parseTime(lastGeneratedTimeValue) < parseTime("23:59")) {
+                 const endOptionFinal = document.createElement('option');
+                 endOptionFinal.value = "23:59";
+                 endOptionFinal.textContent = "23:59";
+                 endTimeEl.appendChild(endOptionFinal);
+            }
+
+            let validDefaultStart = defaultStart || "09:00";
+            if (!Array.from(startTimeEl.options).some(opt => opt.value === validDefaultStart)) {
+                validDefaultStart = startTimeEl.options[0]?.value || "09:00";
+            }
+            startTimeEl.value = validDefaultStart;
+
+            let validDefaultEnd = defaultEnd || "17:00";
+            if (!Array.from(endTimeEl.options).some(opt => opt.value === validDefaultEnd)) {
+                validDefaultEnd = endTimeEl.options[endTimeEl.options.length -1]?.value || "17:00";
+            }
+            endTimeEl.value = validDefaultEnd;
+        }
+
+        function renderSingleDayPanel(dateStr) {
+            const eventData = appData.events[dateStr];
+            let contentHTML = `<div>${getAvailabilityFormHTML(eventData?.daySettings, eventData?.slots[0]?.interviewType)}</div>`;
+
+            if (eventData) {
+                if (eventData.type === 'day-off') {
+                    contentHTML += `<p class="text-base sm:text-lg font-semibold text-rose-700 p-3 bg-rose-100 rounded-lg my-3 sm:my-4 text-center">Este es un día libre.</p>`;
+                } else if (eventData.type === 'slots') {
+                    contentHTML += `<div class="mt-4 sm:mt-6 border-t border-slate-200 pt-3 sm:pt-5"><h4 class="text-base sm:text-lg font-semibold mb-2 sm:mb-3 text-slate-600">Horarios del Día</h4><div id="slotListContainer" class="scrollable-area overflow-y-auto max-h-80 sm:max-h-96 pr-1 space-y-2"></div></div>`;
+                }
+            } else {
+                contentHTML += `<p class="text-slate-500 my-3 sm:my-4 text-sm italic">No hay disponibilidad configurada.</p>`;
+            }
+            
+            contentHTML += `
+                <div class="mt-4 sm:mt-6 space-y-2 border-t border-slate-200 pt-3 sm:pt-5">
+                    <button id="markDayOffBtn" class="btn btn-danger w-full">${ICONS.calendarOff} Marcar Día Libre</button>
+                    ${eventData?.type === 'day-off' ? `<button id="removeDayOffBtn" class="btn btn-warning w-full">${ICONS.calendarOn} Quitar Día Libre</button>` : ''}
+                    ${eventData?.type === 'slots' ? `<button id="clearDaySlotsBtn" class="btn btn-warning w-full">${ICONS.trash} Eliminar Horarios</button>` : ''}
+                    ${eventData?.type === 'slots' && appData.selectedDates.length === 1 ? `<button id="copyDayAvailabilityBtn" class="btn btn-info w-full">${ICONS.copy} Copiar Disponibilidad</button>` : ''}
+                    ${appData.copiedDayData ? `<button id="pasteDayAvailabilityBtn" class="btn btn-info w-full">${ICONS.paste} Pegar Aquí</button>` : ''}
+                </div>`;
+
+            sidePanelContent.innerHTML = contentHTML;
+            
+            const dayStartTimePanel = document.getElementById('dayStartTimePanel');
+            const dayEndTimePanel = document.getElementById('dayEndTimePanel');
+            const slotDurationPanel = document.getElementById('slotDurationMinutesPanel');
+            const currentDaySettings = eventData?.daySettings;
+            populateTimeSelects(slotDurationPanel.value, dayStartTimePanel, dayEndTimePanel, currentDaySettings?.dayStartTime, currentDaySettings?.dayEndTime);
+
+            document.getElementById('saveAvailabilityBtnPanel').addEventListener('click', () => saveAvailabilityFromPanel([dateStr]));
+            if (document.getElementById('markDayOffBtn')) document.getElementById('markDayOffBtn').addEventListener('click', () => markSelectedDaysAsOff([dateStr]));
+            if (document.getElementById('removeDayOffBtn')) document.getElementById('removeDayOffBtn').addEventListener('click', () => removeDayOffStatus([dateStr]));
+            if (document.getElementById('clearDaySlotsBtn')) document.getElementById('clearDaySlotsBtn').addEventListener('click', () => clearSlotsForDays([dateStr]));
+            if (document.getElementById('copyDayAvailabilityBtn')) document.getElementById('copyDayAvailabilityBtn').addEventListener('click', () => copyDayAvailability(dateStr));
+            if (document.getElementById('pasteDayAvailabilityBtn')) document.getElementById('pasteDayAvailabilityBtn').addEventListener('click', () => pasteDayAvailability([dateStr]));
+            
+            document.querySelectorAll('.duration-btn-panel').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.duration-btn-panel').forEach(b => b.classList.remove('bg-indigo-200', 'text-indigo-800', 'font-semibold'));
+                    btn.classList.add('bg-indigo-200', 'text-indigo-800', 'font-semibold');
+                    slotDurationPanel.value = btn.dataset.duration;
+                    populateTimeSelects(slotDurationPanel.value, dayStartTimePanel, dayEndTimePanel, dayStartTimePanel.value, dayEndTimePanel.value);
+                });
+            });
+
+            if (eventData && eventData.type === 'slots') {
+                renderSlotsInPanel(dateStr, document.getElementById('slotListContainer'));
+            }
+        }
+        
+        function renderMultiDayPanel() {
+            const firstSelectedDate = appData.selectedDates[0];
+            const firstDayEvent = appData.events[firstSelectedDate];
+            const daySettings = firstDayEvent?.daySettings; 
+            const interviewType = firstDayEvent?.slots?.[0]?.interviewType;
+
+            let contentHTML = `
+                <p class="text-sm text-slate-600 mb-3 sm:mb-4">Aplicar acciones a los ${appData.selectedDates.length} días seleccionados.</p>
+                <div>${getAvailabilityFormHTML(daySettings, interviewType, true)}</div>
+                <div class="mt-4 sm:mt-6 space-y-2 border-t border-slate-200 pt-3 sm:pt-5">
+                    <button id="markSelectedDaysOffBtn" class="btn btn-danger w-full">${ICONS.calendarOff} Marcar Libres</button>
+                    <button id="removeSelectedDaysOffBtn" class="btn btn-warning w-full">${ICONS.calendarOn} Quitar Estado Libre</button>
+                    <button id="clearSelectedDaysSlotsBtn" class="btn btn-warning w-full">${ICONS.trash} Eliminar Horarios</button>
+                    ${appData.copiedDayData ? `<button id="pasteDayAvailabilityToSelectedBtn" class="btn btn-info w-full">${ICONS.paste} Pegar a ${appData.selectedDates.length} Días</button>` : ''}
+                </div>`;
+            sidePanelContent.innerHTML = contentHTML; 
+
+            const dayStartTimePanel = document.getElementById('dayStartTimePanel');
+            const dayEndTimePanel = document.getElementById('dayEndTimePanel');
+            const slotDurationPanel = document.getElementById('slotDurationMinutesPanel');
+            populateTimeSelects(slotDurationPanel.value, dayStartTimePanel, dayEndTimePanel, daySettings?.dayStartTime, daySettings?.dayEndTime);
+
+            document.getElementById('saveAvailabilityBtnPanel').addEventListener('click', () => saveAvailabilityFromPanel(appData.selectedDates));
+            document.getElementById('markSelectedDaysOffBtn').addEventListener('click', () => markSelectedDaysAsOff(appData.selectedDates));
+            document.getElementById('removeSelectedDaysOffBtn').addEventListener('click', () => removeDayOffStatus(appData.selectedDates));
+            document.getElementById('clearSelectedDaysSlotsBtn').addEventListener('click', () => clearSlotsForDays(appData.selectedDates));
+            if (document.getElementById('pasteDayAvailabilityToSelectedBtn')) {
+                document.getElementById('pasteDayAvailabilityToSelectedBtn').addEventListener('click', () => pasteDayAvailability(appData.selectedDates));
+            }
+            document.querySelectorAll('.duration-btn-panel').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.duration-btn-panel').forEach(b => b.classList.remove('bg-indigo-200', 'text-indigo-800', 'font-semibold'));
+                    btn.classList.add('bg-indigo-200', 'text-indigo-800', 'font-semibold');
+                    slotDurationPanel.value = btn.dataset.duration;
+                    populateTimeSelects(slotDurationPanel.value, dayStartTimePanel, dayEndTimePanel, dayStartTimePanel.value, dayEndTimePanel.value);
+                });
+            });
+        }
+
+        function getAvailabilityFormHTML(daySettings = null, interviewType = 'virtual', isMultiDay = false) {
+            const defaultDuration = daySettings?.slotDurationMinutes || "30";
+            const defaultInterviewType = interviewType || "virtual";
+
+            return `
+                <h4 class="text-base sm:text-lg font-semibold mb-2 sm:mb-3 text-slate-600">${isMultiDay ? 'Disponibilidad Múltiple' : 'Abrir/Editar Disponibilidad'}</h4>
+                <div class="space-y-3 sm:space-y-4 text-sm">
+                    <div>
+                        <label for="interviewTypePanel" class="block text-xs font-medium text-slate-500 mb-0.5 sm:mb-1">Tipo de Entrevista:</label>
+                        <select id="interviewTypePanel" class="w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-white">
+                            <option value="presencial" ${defaultInterviewType === 'presencial' ? 'selected' : ''}>Presencial</option>
+                            <option value="virtual" ${defaultInterviewType === 'virtual' ? 'selected' : ''}>Virtual</option>
+                            <option value="telefónica" ${defaultInterviewType === 'telefónica' ? 'selected' : ''}>Telefónica</option>
+                            <option value="masiva" ${defaultInterviewType === 'masiva' ? 'selected' : ''}>Masiva</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-0.5 sm:mb-1">Duración (minutos):</label>
+                        <div class="flex space-x-1.5 sm:space-x-2">
+                            <button data-duration="15" class="duration-btn-panel flex-1 p-1.5 sm:p-2 border border-slate-300 rounded-md hover:bg-slate-100 ${defaultDuration == 15 ? 'bg-indigo-200 text-indigo-800 font-semibold' : 'bg-white'}">15</button>
+                            <button data-duration="30" class="duration-btn-panel flex-1 p-1.5 sm:p-2 border border-slate-300 rounded-md hover:bg-slate-100 ${defaultDuration == 30 ? 'bg-indigo-200 text-indigo-800 font-semibold' : 'bg-white'}">30</button>
+                            <button data-duration="60" class="duration-btn-panel flex-1 p-1.5 sm:p-2 border border-slate-300 rounded-md hover:bg-slate-100 ${defaultDuration == 60 ? 'bg-indigo-200 text-indigo-800 font-semibold' : 'bg-white'}">60</button>
+                        </div>
+                        <input type="hidden" id="slotDurationMinutesPanel" value="${defaultDuration}">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 sm:gap-3">
+                        <div>
+                            <label for="dayStartTimePanel" class="block text-xs font-medium text-slate-500 mb-0.5 sm:mb-1">Inicio Jornada:</label>
+                            <select id="dayStartTimePanel" class="w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-white"></select>
+                        </div>
+                        <div>
+                            <label for="dayEndTimePanel" class="block text-xs font-medium text-slate-500 mb-0.5 sm:mb-1">Fin Jornada:</label>
+                            <select id="dayEndTimePanel" class="w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-white"></select>
+                        </div>
+                    </div>
+                    <button id="saveAvailabilityBtnPanel" class="btn btn-success w-full mt-1 sm:mt-2">${ICONS.plus} ${isMultiDay ? 'Aplicar a Selección' : 'Generar/Actualizar'}</button>
+                </div>`;
+        }
+        
+        function renderSlotsInPanel(dateStr, container) {
+            if (!container) return;
+            container.innerHTML = '';
+            const eventData = appData.events[dateStr];
+            const displayItems = [];
+
+            if (eventData && eventData.type === 'slots') {
+                eventData.slots.forEach(slot => displayItems.push({...slot, itemType: 'slot', status: 'available'})); 
+            }
+
+            const daySettings = eventData?.daySettings;
+            if (daySettings) {
+                appData.globalNonAvailability.forEach(breakItem => {
+                    const breakStartMins = parseTime(breakItem.start);
+                    const breakEndMins = parseTime(breakItem.end);
+                    const dayStartMins = parseTime(daySettings.dayStartTime);
+                    const dayEndMins = parseTime(daySettings.dayEndTime);
+                    if (Math.max(dayStartMins, breakStartMins) < Math.min(dayEndMins, breakEndMins)) {
+                         displayItems.push({ itemType: 'globalBreak', startTime: breakItem.start, endTime: breakItem.end, title: breakItem.title, id: breakItem.id });
+                    }
+                });
+            }
+
+            displayItems.sort((a, b) => parseTime(a.startTime) - parseTime(b.startTime));
+
+            if (displayItems.length === 0) {
+                 container.innerHTML = `<p class="text-slate-500 text-xs sm:text-sm italic p-2 sm:p-3 bg-slate-50 rounded-md text-center">${(daySettings ? 'Jornada configurada, pero no hay horarios disponibles (o están cubiertos por descansos globales).' : 'No hay horarios definidos.')}</p>`;
+                 return;
+            }
+
+            displayItems.forEach(item => {
+                const itemEl = document.createElement('div');
+                itemEl.className = `slot p-2 sm:p-2.5 rounded-lg shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs sm:text-sm`;
+
+                if (item.itemType === 'slot') {
+                    itemEl.classList.add('slot-available'); 
+                    
+                    itemEl.innerHTML = `
+                        <div class="mb-1 sm:mb-0">
+                            <p class="font-semibold text-slate-800">${item.startTime} - ${formatTime(parseTime(item.startTime) + item.duration)} (${item.duration} min)</p>
+                            <p class="text-xxs sm:text-xs text-slate-500">Tipo: ${item.interviewType}</p>
+                            <p class="text-xxs sm:text-xs font-medium text-green-700">Disponible</p>
+                        </div>
+                        <div class="slot-actions flex flex-wrap gap-1 items-center mt-1 sm:mt-0">
+                             <button data-slot-id="${item.id}" data-date-str="${dateStr}" class="btn-cancel-slot btn btn-danger text-xxs px-1.5 py-0.5 sm:text-xs sm:px-2 sm:py-1">${ICONS.trash}</button>
+                        </div>
+                    `;
+                } else if (item.itemType === 'globalBreak') {
+                    itemEl.classList.add('slot-global-break');
+                    itemEl.innerHTML = `
+                        <div class="w-full text-center py-0.5 sm:py-1">
+                            <p class="font-semibold text-slate-600">${item.title}</p>
+                            <p class="text-xxs sm:text-xs text-slate-500">${item.startTime} - ${item.endTime}</p>
+                        </div>`;
+                }
+                container.appendChild(itemEl);
+            });
+            container.querySelectorAll('.btn-cancel-slot').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const slotId = e.currentTarget.dataset.slotId;
+                    const dateStrForSlot = e.currentTarget.dataset.dateStr;
+                    showConfirm('Cancelar Horario', `¿Seguro que quieres cancelar este horario?`, () => {
+                        cancelSlot(dateStrForSlot, slotId);
+                    });
+                });
+            });
+        }
+
+        // --- EVENT HANDLERS & ACTIONS ---
+        function handleDayClick(dateStr, event) {
+            const isCtrlPressed = event.ctrlKey || event.metaKey; 
+            const isShiftPressed = event.shiftKey;
+
+            if (isShiftPressed && appData.lastSelectedDate && appData.lastSelectedDate !== dateStr) {
+                // --- Shift+Click: Range Selection ---
+                const oldSelectedDates = [...appData.selectedDates]; 
+                appData.selectedDates = []; 
+
+                const d1 = new Date(appData.lastSelectedDate + 'T00:00:00Z'); 
+                const d2 = new Date(dateStr + 'T00:00:00Z');          
+
+                const start = d1 < d2 ? d1 : d2;
+                const end = d1 < d2 ? d2 : d1;
+
+                for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                    appData.selectedDates.push(formatDate(d));
+                }
+                addLog("Selección de Rango", `Días desde ${formatDate(start)} hasta ${formatDate(end)} seleccionados.`);
+
+            } else {
+                // --- No Shift Key: Handle Ctrl+Click (Desktop) and Simple Taps (Mobile/Desktop) ---
+                const index = appData.selectedDates.indexOf(dateStr);
+
+                if (isCtrlPressed) { 
+                    if (index > -1) { 
+                        appData.selectedDates.splice(index, 1);
+                        addLog("Día Deseleccionado (Ctrl/Cmd)", `Día: ${dateStr}`);
+                    } else { 
+                        appData.selectedDates.push(dateStr);
+                        addLog("Día Seleccionado (Ctrl/Cmd)", `Día: ${dateStr}`);
+                    }
+                    appData.lastSelectedDate = dateStr; 
+
+                } else { // No modifier keys (simple tap for Mobile, or simple click for Desktop)
+                    if (index > -1) { 
+                        appData.selectedDates.splice(index, 1);
+                        addLog("Día Deseleccionado (Tap)", `Día: ${dateStr}`);
+                    } else { 
+                        appData.selectedDates.push(dateStr);
+                        addLog("Día Seleccionado (Tap)", `Día: ${dateStr}`);
+                    }
+                    appData.lastSelectedDate = dateStr;
+                }
+            }
+
+            if (appData.selectedDates.length === 0) {
+                appData.lastSelectedDate = null;
+            }
+
+            renderCalendar();
+            updateSidePanel();
+        }
+        
+        prevMonthBtn.addEventListener('click', () => { 
+            appData.currentDate.setMonth(appData.currentDate.getMonth() - 1); 
+            addLog("Navegación Calendario", `Mes cambiado a ${appData.currentDate.toLocaleString('es-ES', { month: 'long', year: 'numeric' })}`);
+            renderCalendar(); 
+            updateSidePanel(); 
+        });
+        nextMonthBtn.addEventListener('click', () => { 
+            appData.currentDate.setMonth(appData.currentDate.getMonth() + 1); 
+            addLog("Navegación Calendario", `Mes cambiado a ${appData.currentDate.toLocaleString('es-ES', { month: 'long', year: 'numeric' })}`);
+            renderCalendar(); 
+            updateSidePanel(); 
+        });
+
+        function saveAvailabilityFromPanel(datesToProcess) {
+            if (datesToProcess.length === 0) return;
+            const type = document.getElementById('interviewTypePanel').value;
+            const duration = parseInt(document.getElementById('slotDurationMinutesPanel').value);
+            const dayStart = document.getElementById('dayStartTimePanel').value;
+            const dayEnd = document.getElementById('dayEndTimePanel').value;
+
+            if (!type || !duration || !dayStart || !dayEnd) {
+                showNotification('Por favor, completa todos los campos.', 'error'); return;
+            }
+            const startTimeInMinutes = parseTime(dayStart);
+            const endTimeInMinutes = parseTime(dayEnd);
+            if (startTimeInMinutes >= endTimeInMinutes) {
+                showNotification('Inicio debe ser anterior a fin.', 'error'); return;
+            }
+
+            let totalSlotsGenerated = 0;
+            let logDetails = `Tipo: ${type}, Duración: ${duration}m, Jornada: ${dayStart}-${dayEnd} para día(s): ${datesToProcess.join(', ')}`;
+
+            datesToProcess.forEach(dateStr => {
+                const slots = [];
+                let currentTimeInMinutes = startTimeInMinutes;
+                while (currentTimeInMinutes < endTimeInMinutes) {
+                    const slotStart = currentTimeInMinutes;
+                    const slotEnd = currentTimeInMinutes + duration;
+                    let isGlobalBreak = false;
+                    for (const gnb of appData.globalNonAvailability) {
+                        const gnbStart = parseTime(gnb.start);
+                        const gnbEnd = parseTime(gnb.end);
+                        if (Math.max(slotStart, gnbStart) < Math.min(slotEnd, gnbEnd)) {
+                            isGlobalBreak = true; break;
+                        }
+                    }
+                    if (!isGlobalBreak) {
+                         slots.push({ id: generateUUID(), startTime: formatTime(slotStart), duration: duration, interviewType: type, status: 'available' }); 
+                    }
+                    currentTimeInMinutes += duration;
+                }
+                appData.events[dateStr] = { type: 'slots', slots: slots, daySettings: { dayStartTime: dayStart, dayEndTime: dayEnd, slotDurationMinutes: duration }};
+                if (datesToProcess.length === 1) totalSlotsGenerated = slots.length;
+            });
+            
+            addLog("Disponibilidad Guardada", logDetails);
+            if (datesToProcess.length === 1) {
+                showNotification(`Día actualizado con ${totalSlotsGenerated} horario(s).`, "success");
+            } else {
+                showNotification(`${datesToProcess.length} día(s) actualizados.`, "success");
+            }
+            renderCalendar();
+            updateSidePanel();
+        }
+
+        function markSelectedDaysAsOff(datesToProcess) {
+            if (datesToProcess.length === 0) return;
+            showConfirm( `Marcar ${datesToProcess.length} día(s) como Libres`, 'Esto eliminará horarios existentes. ¿Continuar?', () => {
+                datesToProcess.forEach(dateStr => { appData.events[dateStr] = { type: 'day-off' }; });
+                addLog("Días Marcados como Libres", `Día(s): ${datesToProcess.join(', ')}`);
+                renderCalendar();
+                updateSidePanel();
+                showNotification(`${datesToProcess.length} día(s) marcado(s) como libre.`, "success");
+            });
+        }
+        
+        function removeDayOffStatus(datesToProcess) {
+            if (datesToProcess.length === 0) return;
+             showConfirm( `Quitar estado "Libre" de ${datesToProcess.length} día(s)`, '¿Estás seguro?', () => {
+                let count = 0;
+                datesToProcess.forEach(dateStr => {
+                    if (appData.events[dateStr] && appData.events[dateStr].type === 'day-off') {
+                        delete appData.events[dateStr];
+                        count++;
+                    }
+                });
+                if (count > 0) {
+                    addLog("Estado 'Libre' Quitado", `Día(s): ${datesToProcess.join(', ')}`);
+                    renderCalendar();
+                    updateSidePanel(); 
+                    showNotification(`Estado "Libre" quitado de ${count} día(s).`, "success");
+                } else {
+                    showNotification("Ningún día seleccionado estaba como libre.", "info");
+                }
+            });
+        }
+
+        function clearSlotsForDays(datesToProcess) {
+            if (datesToProcess.length === 0) return;
+            showConfirm( `Eliminar Horarios de ${datesToProcess.length} día(s)`, '¿Seguro? (No afecta días "Libre")', () => {
+                let count = 0;
+                datesToProcess.forEach(dateStr => {
+                    if (appData.events[dateStr] && appData.events[dateStr].type === 'slots') {
+                        delete appData.events[dateStr]; 
+                        count++;
+                    }
+                });
+                addLog("Horarios Eliminados", `Para día(s): ${datesToProcess.join(', ')}`);
+                renderCalendar();
+                updateSidePanel();
+                showNotification(`Horarios eliminados de ${count} día(s).`, "success");
+            });
+        }
+
+        function copyDayAvailability(sourceDateStr) {
+            if (!appData.events[sourceDateStr] || appData.events[sourceDateStr].type !== 'slots') {
+                showNotification("No hay disponibilidad para copiar.", "error"); return;
+            }
+            appData.copiedDayData = JSON.parse(JSON.stringify(appData.events[sourceDateStr]));
+            addLog("Disponibilidad Copiada", `Desde: ${sourceDateStr}`);
+            showNotification(`Disponibilidad de ${new Date(sourceDateStr+'T00:00:00Z').toLocaleDateString('es-ES', {month:'short', day:'numeric'})} copiada.`, "success");
+            updateSidePanel(); 
+        }
+
+        function pasteDayAvailability(targetDatesArray) {
+            if (!appData.copiedDayData) { showNotification("No hay disponibilidad copiada.", "error"); return; }
+            if (targetDatesArray.length === 0) { showNotification("Selecciona días destino.", "error"); return; }
+            
+            let count = 0;
+            targetDatesArray.forEach(dateStr => {
+                appData.events[dateStr] = JSON.parse(JSON.stringify(appData.copiedDayData)); 
+                if (appData.events[dateStr].slots) {
+                    appData.events[dateStr].slots.forEach(slot => {
+                        slot.id = generateUUID();
+                        slot.status = 'available'; 
+                    });
+                }
+                count++;
+            });
+            addLog("Disponibilidad Pegada", `A ${count} día(s): ${targetDatesArray.join(', ')}`);
+            showNotification(`Disponibilidad pegada a ${count} día(s).`, "success");
+            renderCalendar();
+            updateSidePanel();
+        }
+
+        function openModal(modalElement) { modalElement.style.display = 'flex'; }
+        function closeModal(modalElement) { modalElement.style.display = 'none'; }
+
+        document.getElementById('cancelConfirm').addEventListener('click', () => closeModal(confirmModal));
+        
+        function cancelSlot(dateStr, slotId) {
+            const dayEvents = appData.events[dateStr];
+            let slotTime = "N/A";
+            if (dayEvents && dayEvents.type === 'slots') {
+                const slot = dayEvents.slots.find(s => s.id === slotId);
+                if (slot) slotTime = slot.startTime;
+                dayEvents.slots = dayEvents.slots.filter(s => s.id !== slotId);
+            }
+            addLog("Horario Cancelado", `Día: ${dateStr}, Hora: ${slotTime}`);
+            renderCalendar();
+            updateSidePanel();
+            showNotification("Horario cancelado.", "success");
+        }
+        
+        function showConfirm(title, message, onConfirm) {
+            confirmTitleEl.textContent = title;
+            confirmMessageEl.textContent = message;
+            confirmCallback = onConfirm;
+            openModal(confirmModal);
+        }
+
+        document.getElementById('executeConfirm').addEventListener('click', () => {
+            if (confirmCallback) confirmCallback();
+            closeModal(confirmModal);
+            confirmCallback = null;
+        });
+        
+        // --- JSON EXPORT ---
+        function exportConfigurationToJson() {
+            const dataToExport = {
+                version: "1.0",
+                timestamp: new Date().toISOString(),
+                configuracionEventos: appData.events,
+                descansosGlobales: appData.globalNonAvailability
+            };
+            const jsonString = JSON.stringify(dataToExport, null, 2); 
+            const blob = new Blob([jsonString], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const today = new Date();
+            const dateSuffix = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+            a.download = `configuracion_disponibilidad_${dateSuffix}.json`;
+            a.href = url;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            addLog("Configuración Exportada a JSON");
+            showNotification("Configuración exportada a JSON.", "success");
+        }
+        exportJsonBtn.innerHTML = ICONS.download + exportJsonBtn.textContent;
+        exportJsonBtn.addEventListener('click', exportConfigurationToJson);
+
+
+        // --- INITIAL LOAD & STATIC LISTENERS ---
+        if (addGlobalBreakBtn) { 
+            addGlobalBreakBtn.innerHTML = ICONS.plus + addGlobalBreakBtn.textContent;
+            addGlobalBreakBtn.addEventListener('click', addGlobalBreak);
+        }
+        
+        addLog("Aplicación Iniciada", `Versión del planificador cargada.`);
+        renderCalendar();
+        updateSidePanel(); 
+    </script>
+</body>
+</html>
