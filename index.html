@@ -353,14 +353,16 @@
                     <button id="nextMonthBtn" class="btn btn-primary w-full sm:w-auto text-xs sm:text-sm">Mes Siguiente
                         &gt;</button>
                 </div>
-                <div class="flex flex-col sm:flex-row justify-center gap-2 mb-3">
+                                                <div class="flex flex-col sm:flex-row justify-end gap-2 mb-3">
                     <button id="selectAllVisibleBtn"
-                        class="btn btn-info text-xs px-3 py-1.5 w-full sm:w-auto">Seleccionar Visibles Futuros</button>
+                        class="btn bg-black text-white text-xs px-3 py-1.5 w-full sm:w-auto">Seleccionar todos los días</button>
                     <button id="deselectAllBtn"
-                        class="btn btn-secondary text-xs px-3 py-1.5 w-full sm:w-auto">Deseleccionar Todos</button>
+                        class="btn bg-gray-500 text-white text-xs px-3 py-1.5 w-full sm:w-auto">Deseleccionar</button>
                 </div>
+
                 <div id="calendarGrid"
                     class="grid grid-cols-7 gap-1 sm:gap-1.5 bg-white p-2 sm:p-3 rounded-xl shadow-xl">
+                    
                 </div>
                 <p class="mt-2 sm:mt-3 text-xs text-slate-500 text-center">Usa Shift+Click para rango, Ctrl/Cmd+Click o
                     Tap para múltiple.</p>
@@ -368,17 +370,19 @@
 
             <div id="sidePanel"
                 class="w-full md:w-1/3 lg:w-1/4 bg-white p-4 sm:p-5 rounded-xl shadow-xl self-start md:sticky md:top-6 scrollable-area">
+
                 <h3 id="sidePanelTitle"
                     class="text-xl sm:text-2xl font-semibold mb-4 sm:mb-5 text-slate-700 border-b border-slate-200 pb-2 sm:pb-3">
                     Detalles y Acciones</h3>
                 <div id="sidePanelContent" class="space-y-4 sm:space-y-5">
                 </div>
 
+                
                 <div id="weeklyHoursAccordion"
                     class="accordion-container mt-4 sm:mt-6 border-t border-slate-200 pt-3 sm:pt-4">
                     <button
                         class="accordion-header flex justify-between items-center w-full text-left py-2 focus:outline-none">
-                        <h4 class="text-base sm:text-lg font-semibold text-slate-600">Horario Laboral Semanal</h4>
+                        <h4 class="text-base sm:text-lg font-semibold text-slate-600">Configuración horario semanal</h4>
                         <span
                             class="accordion-icon text-slate-500 transform transition-transform duration-200 text-xl font-mono">-</span>
                     </button>
@@ -398,7 +402,7 @@
                     class="accordion-container mt-4 sm:mt-6 border-t border-slate-200 pt-3 sm:pt-4">
                     <button
                         class="accordion-header flex justify-between items-center w-full text-left py-2 focus:outline-none">
-                        <h4 class="text-lg font-semibold text-slate-600">Descansos Globales</h4>
+                        <h4 class="text-lg font-semibold text-slate-600">Configuración de descansos</h4>
                         <span
                             class="accordion-icon text-slate-500 transform transition-transform duration-200 text-xl font-mono">+</span>
                     </button>
@@ -731,10 +735,10 @@
             } else if (appData.selectedDates.length === 1) {
                 const dateStr = appData.selectedDates[0];
                 const localDate = getLocalDateFromStr(dateStr);
-                sidePanelTitle.textContent = `Día: ${localDate.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
+                sidePanelTitle.textContent = `Configuración general por día: ${localDate.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
                 renderSingleDayPanel(dateStr);
             } else {
-                sidePanelTitle.textContent = `${appData.selectedDates.length} días seleccionados`;
+                sidePanelTitle.textContent = `Configuración general para los ${appData.selectedDates.length} días seleccionados`;
                 renderMultiDayPanel();
             }
         }
@@ -997,9 +1001,9 @@
 
             contentHTML += `
                 <div class="mt-4 sm:mt-6 space-y-2 border-t border-slate-200 pt-3 sm:pt-5">
-                    <button id="markDayOffBtn" class="btn btn-danger w-full">${ICONS.calendarOff} Marcar Día Libre</button>
-                    ${eventData?.type === 'day-off' ? `<button id="removeDayOffBtn" class="btn btn-warning w-full">${ICONS.calendarOn} Quitar Día Libre</button>` : ''}
-                    ${eventData?.type === 'slots' ? `<button id="clearDaySlotsBtn" class="btn btn-warning w-full">${ICONS.trash} Eliminar Horarios</button>` : ''}
+                    <button id="markDayOffBtn" class="btn btn-danger w-full">${ICONS.calendarOff} Marcar día libre</button>
+                    ${eventData?.type === 'day-off' ? `<button id="removeDayOffBtn" class="btn btn-warning w-full">${ICONS.calendarOn} Quitar día libre</button>` : ''}
+                    ${eventData?.type === 'slots' ? `<button id="clearDaySlotsBtn" class="btn btn-warning w-full">${ICONS.trash} Eliminar horarios generados</button>` : ''}
                     ${eventData?.type === 'slots' && appData.selectedDates.length === 1 ? `<button id="copyDayAvailabilityBtn" class="btn btn-info w-full">${ICONS.copy} Copiar Disponibilidad</button>` : ''}
                     ${appData.copiedDayData && canGenerateSlots ? `<button id="pasteDayAvailabilityBtn" class="btn btn-info w-full">${ICONS.paste} Pegar Aquí</button>` : ''}
                 </div>`;
@@ -1070,9 +1074,9 @@
                 <p class="text-sm text-slate-600 mb-3 sm:mb-4">Aplicar acciones a los ${appData.selectedDates.length} días seleccionados.</p>
                 <div>${formMessage}${getAvailabilityFormHTML(firstSelectedDate, firstDayEvent, true, false)}</div>    
                 <div class="mt-4 sm:mt-6 space-y-2 border-t border-slate-200 pt-3 sm:pt-5">
-                    <button id="markSelectedDaysOffBtn" class="btn btn-danger w-full">${ICONS.calendarOff} Marcar Libres</button>
-                    <button id="removeSelectedDaysOffBtn" class="btn btn-warning w-full">${ICONS.calendarOn} Quitar Estado Libre</button>
-                    <button id="clearSelectedDaysSlotsBtn" class="btn btn-warning w-full">${ICONS.trash} Eliminar Horarios</button>
+                    <button id="markSelectedDaysOffBtn" class="btn btn-danger w-full">${ICONS.calendarOff} Marcar días como días libres</button>
+                    <button id="removeSelectedDaysOffBtn" class="btn btn-warning w-full">${ICONS.calendarOn} Quitar días libres</button>
+                    <button id="clearSelectedDaysSlotsBtn" class="btn btn-warning w-full">${ICONS.trash} Eliminar horarios generados</button>
                     ${appData.copiedDayData ? `<button id="pasteDayAvailabilityToSelectedBtn" class="btn btn-info w-full">${ICONS.paste} Pegar a ${appData.selectedDates.length} Días</button>` : ''}
                 </div>`;
             sidePanelContent.innerHTML = contentHTML;
@@ -1120,16 +1124,16 @@
         }
 
         function getAvailabilityFormHTML(dateStr, eventData, isMultiDay = false, disableGenerateButton = false) {
-            const defaultDuration = eventData?.daySettings?.slotDurationMinutes || "30";
-            const defaultInterviewType = eventData?.daySettings?.interviewType || "virtual";
-            const defaultCandidatesPerSlot = eventData?.daySettings?.candidatesPerSlot || 1;
+            const defaultDuration = eventData?.daySettings?.slotDurationMinutes || "15";
+            const defaultInterviewType = eventData?.daySettings?.interviewType || "presencial";
+            const defaultCandidatesPerSlot = eventData?.daySettings?.candidatesPerSlot || 4;
 
 
             return `
                 <h4 class="text-base sm:text-lg font-semibold mb-2 sm:mb-3 text-slate-600">${isMultiDay ? 'Configurar entrevistas para los días seleccionados' : 'Configurar entrevistas para el día seleccionado'}</h4>
                 <div class="space-y-3 sm:space-y-4 text-sm">
                     <div>
-                        <label for="interviewTypePanel" class="block text-xs font-medium text-slate-500 mb-0.5 sm:mb-1">Tipo de Entrevista:</label>
+                        <label for="interviewTypePanel" class="block text-xs font-medium text-slate-500 mb-0.5 sm:mb-1">Tipo de entrevista:</label>
                         <select id="interviewTypePanel" class="w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-white">
                             <option value="presencial" ${defaultInterviewType === 'presencial' ? 'selected' : ''}>Presencial</option>
                             <option value="virtual" ${defaultInterviewType === 'virtual' ? 'selected' : ''}>Virtual</option>
@@ -1138,7 +1142,7 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-slate-500 mb-0.5 sm:mb-1">Duración de Slots (minutos):</label>
+                        <label class="block text-xs font-medium text-slate-500 mb-0.5 sm:mb-1">Duración de cada entrevista:</label>
                         <div class="flex space-x-1.5 sm:space-x-2">
                             <button data-duration="15" class="duration-btn-panel flex-1 p-1.5 sm:p-2 border border-slate-300 rounded-md hover:bg-slate-100 ${defaultDuration == 15 ? 'bg-indigo-200 text-indigo-800 font-semibold' : 'bg-white'}">15</button>
                             <button data-duration="30" class="duration-btn-panel flex-1 p-1.5 sm:p-2 border border-slate-300 rounded-md hover:bg-slate-100 ${defaultDuration == 30 ? 'bg-indigo-200 text-indigo-800 font-semibold' : 'bg-white'}">30</button>
@@ -1147,23 +1151,23 @@
                         <input type="hidden" id="slotDurationMinutesPanel" value="${defaultDuration}">
                     </div>
                     <div>
-                        <label for="candidatesPerSlotPanel" class="block text-xs font-medium text-slate-500 mb-0.5 sm:mb-1">Candidatos por Slot: reemplaza el valor</label>
+                        <label for="candidatesPerSlotPanel" class="block text-xs font-medium text-slate-500 mb-0.5 sm:mb-1">Candidatos por entrevista:</label>
                         <input type="number" id="candidatesPerSlotPanel" value="${defaultCandidatesPerSlot}" min="1" class="w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-white">
                     </div>
                     <div class="border-t border-slate-200 pt-3 mt-3">
-                        <p class="text-xs text-slate-500 mb-1">Horario personalizado para este día/selección (si no, se usa el semanal):</p>
+                        <p class="text-xs text-slate-500 mb-1">Horario personalizado para este día/selección. Se usa para realizar una modificación en un día particular, no afecta al resto de días:</p>
                         <div class="grid grid-cols-2 gap-2 sm:gap-3">
                             <div>
-                                <label for="dayCustomStartTimePanel" class="block text-xs font-medium text-slate-500 mb-0.5 sm:mb-1">Inicio Jornada (Custom):</label>
+                                <label for="dayCustomStartTimePanel" class="block text-xs font-medium text-slate-500 mb-0.5 sm:mb-1">Inicio de jornada:</label>
                                 <select id="dayCustomStartTimePanel" class="w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-white"></select>
                             </div>
                             <div>
-                                <label for="dayCustomEndTimePanel" class="block text-xs font-medium text-slate-500 mb-0.5 sm:mb-1">Fin Jornada (Custom):</label>
+                                <label for="dayCustomEndTimePanel" class="block text-xs font-medium text-slate-500 mb-0.5 sm:mb-1">Fin de jornada:</label>
                                 <select id="dayCustomEndTimePanel" class="w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-white"></select>
                             </div>
                         </div>
                     </div>
-                    <button id="saveAvailabilityBtnPanel" class="btn btn-success w-full mt-1 sm:mt-2" ${disableGenerateButton ? 'disabled title="No se puede generar disponibilidad para días pasados o el actual."' : ''}>${ICONS.plus} ${isMultiDay ? 'Generar Slots para Selección' : 'Generar Slots para el Día'}</button>
+                    <button id="saveAvailabilityBtnPanel" class="btn btn-success w-full mt-1 sm:mt-2" ${disableGenerateButton ? 'disabled title="No se puede generar disponibilidad para días pasados o el actual."' : ''}>${ICONS.plus} ${isMultiDay ? 'Generar disponibilidad para los días seleccionados' : 'Generar disponibilidad para el día seleccionado'}</button>
                 </div>`;
         }
 
