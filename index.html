@@ -1046,10 +1046,11 @@ function saveAvailabilityFromPanel(datesToProcess) {
     }
     const type = document.getElementById('interviewTypePanel').value;
     const duration = parseInt(document.getElementById('slotDurationMinutesPanel').value);
-    // Obtener valores del formulario del panel lateral UNA VEZ, antes del bucle
+    
     const formPanelStartTime = document.getElementById('dayCustomStartTimePanel')?.value;
     const formPanelEndTime = document.getElementById('dayCustomEndTimePanel')?.value;
-    const isFormPanelTimeRangeValid = formPanelStartTime && formPanelEndTime && parseTime(formPanelStartTime) < parseTime(formPanelEndTime);
+    // Verifica si el usuario ingresó un rango de tiempo válido en el panel lateral
+    const isFormPanelTimeRangeValidAndProvided = formPanelStartTime && formPanelEndTime && parseTime(formPanelStartTime) < parseTime(formPanelEndTime);
 
     if (!type || !duration) {
         showNotification('Por favor, completa tipo y duración de los slots.', 'error'); return;
@@ -1057,165 +1058,120 @@ function saveAvailabilityFromPanel(datesToProcess) {
 
     let daysProcessedCount = 0;
     let totalSlotsGeneratedOverall = 0;
-    const validDatesForSlotGeneration = [];
-    const skippedNonWorkingOrPastDays = [];
-    const datesWithActualProcessing = [];
-
+    const processedDatesForLog = [];
 
     datesToProcess.forEach(dateStr => {
         if (isDateTodayOrPast(dateStr)) {
             addLog("Generación de Slots Omitida (Fecha Inválida)", `Día ${dateStr} es hoy o pasado.`);
             if (appData.events[dateStr] && appData.events[dateStr].type === 'slots') { delete appData.events[dateStr]; }
-            skippedNonWorkingOrPastDays.push(dateStr);
-            return; // Funciona como 'continue' en forEach
+            return; // Como 'continue' en forEach
         }
 
         const dayOfWeek = new Date(dateStr + 'T00:00:00Z').getDay();
         const weeklySetting = appData.workingHours[dayOfWeek];
-
-        let formProvidesEffectiveOverride = false;
-        if (isFormPanelTimeRangeValid) {
-            if (!weeklySetting.active) {
-                // Si el día es inactivo semanalmente, el formulario solo representa un override efectivo
-                // si los tiempos ingresados son DIFERENTES a los que podrían estar por defecto en weeklySetting
-                // (asumiendo que los campos del panel podrían haberse llenado con weeklySetting.startTime/endTime)
-                if (formPanelStartTime !== weeklySetting.startTime || formPanelEndTime !== weeklySetting.endTime) {
-                    formProvidesEffectiveOverride = true;
-                }
-            } else {
-                // Si el día ya es activo semanalmente, cualquier tiempo válido en el panel es una personalización/override.
-                formProvidesEffectiveOverride = true;
-            }
-        }
-
-        // Condición de omisión:
-        // Omitir si el día NO es laborable semanalmente Y el formulario NO provee un override efectivo.
-        if (!weeklySetting.active && !formProvidesEffectiveOverride) {
-            addLog("Generación de Slots Omitida (Día Semanal No Laborable sin Override Efectivo)", `Día ${dateStr} (${getDayName(dayOfWeek)}) no está activo y el panel no indicó un horario personalizado que lo anule.`);
-            if (appData.events[dateStr] && appData.events[dateStr].type === 'slots') {
-                delete appData.events[dateStr]; // Limpiar slots si existían indebidamente
-                addLog("Limpieza de Slots", `Slots eliminados para ${dateStr} por ser día no laborable sin override efectivo.`);
-            }
-            skippedNonWorkingOrPastDays.push(dateStr);
-            return; // 'continue'
-        }
-        
-        // Si llegamos aquí, el día es apto para generar slots.
-        validDatesForSlotGeneration.push(dateStr);
-    });
-
-    if (validDatesForSlotGeneration.length === 0) {
-        if (skippedNonWorkingOrPastDays.length > 0 && datesToProcess.length === skippedNonWorkingOrPastDays.length) {
-            showNotification("No se generaron horarios. Los días seleccionados no son laborables o son pasados/actuales.", "warning");
-        } else if (datesToProcess.length > 0) {
-            showNotification("No se pueden generar horarios para los días seleccionados (verifique que no sean pasados, actuales o no laborables sin un horario personalizado explícito).", "warning");
-        }
-        renderCalendar();
-        updateSidePanel();
-        return;
-    }
-
-    validDatesForSlotGeneration.forEach(dateStr => {
-        const dayOfWeek = new Date(dateStr + 'T00:00:00Z').getDay();
-        const weeklySetting = appData.workingHours[dayOfWeek];
-
-        // Re-evaluar formProvidesEffectiveOverride para CADA día válido, aunque formPanelStartTime/EndTime sean globales para esta operación
-        let formProvidesEffectiveOverrideForThisDay = false;
-        if (isFormPanelTimeRangeValid) {
-            if (!weeklySetting.active) {
-                 if (formPanelStartTime !== weeklySetting.startTime || formPanelEndTime !== weeklySetting.endTime) {
-                    formProvidesEffectiveOverrideForThisDay = true;
-                }
-            } else {
-                formProvidesEffectiveOverrideForThisDay = true;
-            }
-        }
 
         let dayStartToUse, dayEndToUse;
+        let isCustomOverrideForThisDay = false;
 
-        if (formProvidesEffectiveOverrideForThisDay) {
-            dayStartToUse = formPanelStartTime;
-            dayEndToUse = formPanelEndTime;
-        } else if (weeklySetting.active) { // Si no hay override del form, pero el día es activo semanalmente
-            dayStartToUse = weeklySetting.startTime;
-            dayEndToUse = weeklySetting.endTime;
-        } else {
-             // Este caso no debería ocurrir si la lógica de omisión previa es correcta
-            addLog("Error Lógico Inesperado", `Día ${dateStr} alcanzó la generación de slots sin ser laborable ni tener override.`);
-            return; // 'continue'
-        }
-
-        const startTimeInMinutes = parseTime(dayStartToUse);
-        const endTimeInMinutes = parseTime(dayEndToUse);
-
-        if (startTimeInMinutes >= endTimeInMinutes) {
-            addLog("Error en Horario Efectivo", `Para ${dateStr}, inicio (${dayStartToUse}) no es anterior a fin (${dayEndToUse}). Se omiten slots.`);
-            if (appData.events[dateStr] && appData.events[dateStr].type === 'slots') { delete appData.events[dateStr]; }
-            return; // 'continue'
-        }
-
-        daysProcessedCount++;
-        const slots = [];
-        let currentTimeInMinutes = startTimeInMinutes;
-        while (currentTimeInMinutes < endTimeInMinutes) {
-            const slotStart = currentTimeInMinutes;
-            const slotEnd = currentTimeInMinutes + duration;
-            if (slotEnd > endTimeInMinutes) break; // No crear slots que excedan el fin de jornada
-
-            let isGlobalBreak = false;
-            for (const gnb of appData.globalNonAvailability) {
-                const gnbStart = parseTime(gnb.start);
-                const gnbEnd = parseTime(gnb.end);
-                if (Math.max(slotStart, gnbStart) < Math.min(slotEnd, gnbEnd)) {
-                    isGlobalBreak = true; break;
+        if (isFormPanelTimeRangeValidAndProvided) {
+            if (weeklySetting.active) {
+                // Día activo semanalmente: el panel siempre es una personalización si tiene datos válidos.
+                isCustomOverrideForThisDay = true;
+            } else {
+                // Día NO activo semanalmente: el panel es un override efectivo SOLO si los tiempos
+                // ingresados en el panel son DIFERENTES de los tiempos 'base' de este día inactivo.
+                if (formPanelStartTime !== weeklySetting.startTime || formPanelEndTime !== weeklySetting.endTime) {
+                    isCustomOverrideForThisDay = true;
                 }
             }
-            if (!isGlobalBreak) {
-                slots.push({ id: generateUUID(), startTime: formatTime(slotStart), duration: duration, interviewType: type, status: 'available' });
-                totalSlotsGeneratedOverall++;
+        }
+
+        if (weeklySetting.active || isCustomOverrideForThisDay) {
+            // Procesar este día
+            if (isCustomOverrideForThisDay) {
+                dayStartToUse = formPanelStartTime;
+                dayEndToUse = formPanelEndTime;
+            } else { // Usar horario semanal (porque weeklySetting.active debe ser true aquí)
+                dayStartToUse = weeklySetting.startTime;
+                dayEndToUse = weeklySetting.endTime;
             }
-            currentTimeInMinutes += duration;
-        }
-        
-        const daySettingsToStore = {
-            slotDurationMinutes: duration,
-            interviewType: type
-        };
-        // Solo almacenar dayStartTime/EndTime en daySettings si fueron explícitamente proveídos por el formulario como un override
-        if (formProvidesEffectiveOverrideForThisDay) {
-            daySettingsToStore.dayStartTime = formPanelStartTime;
-            daySettingsToStore.dayEndTime = formPanelEndTime;
-        }
 
-        appData.events[dateStr] = { type: 'slots', slots: slots, daySettings: daySettingsToStore };
-        datesWithActualProcessing.push(dateStr);
-    });
+            const startTimeInMinutes = parseTime(dayStartToUse);
+            const endTimeInMinutes = parseTime(dayEndToUse);
 
-    let logDetails = `Tipo: ${type}, Duración: ${duration}m.`;
-    if (isFormPanelTimeRangeValid) {
-        logDetails += ` Horario del panel intentado: ${formPanelStartTime}-${formPanelEndTime}.`;
+            if (startTimeInMinutes >= endTimeInMinutes) {
+                addLog("Error en Horario Efectivo", `Para ${dateStr}, inicio (${dayStartToUse}) no es anterior a fin (${dayEndToUse}). Se omiten slots.`);
+                if (appData.events[dateStr] && appData.events[dateStr].type === 'slots') { delete appData.events[dateStr]; }
+                return; // 'continue'
+            }
+
+            daysProcessedCount++;
+            const slots = [];
+            let currentTimeInMinutes = startTimeInMinutes;
+            while (currentTimeInMinutes < endTimeInMinutes) {
+                const slotStart = currentTimeInMinutes;
+                const slotEnd = currentTimeInMinutes + duration;
+                if (slotEnd > endTimeInMinutes) break;
+
+                let isGlobalBreak = false;
+                for (const gnb of appData.globalNonAvailability) {
+                    const gnbStart = parseTime(gnb.start);
+                    const gnbEnd = parseTime(gnb.end);
+                    if (Math.max(slotStart, gnbStart) < Math.min(slotEnd, gnbEnd)) {
+                        isGlobalBreak = true; break;
+                    }
+                }
+                if (!isGlobalBreak) {
+                    slots.push({ id: generateUUID(), startTime: formatTime(slotStart), duration: duration, interviewType: type, status: 'available' });
+                    totalSlotsGeneratedOverall++;
+                }
+                currentTimeInMinutes += duration;
+            }
+            
+            const daySettingsToStore = {
+                slotDurationMinutes: duration,
+                interviewType: type
+            };
+            if (isCustomOverrideForThisDay) { // Solo guardar tiempos si vinieron del panel como un override efectivo
+                daySettingsToStore.dayStartTime = formPanelStartTime;
+                daySettingsToStore.dayEndTime = formPanelEndTime;
+            }
+
+            appData.events[dateStr] = { type: 'slots', slots: slots, daySettings: daySettingsToStore };
+            processedDatesForLog.push(dateStr);
+
+        } else {
+            // Día no activo semanalmente y sin override efectivo desde el panel: OMITIR
+            addLog("Generación de Slots Omitida (No Laborable sin Override Efectivo)", `Día ${dateStr} (${getDayName(dayOfWeek)}) no procesado.`);
+            if (appData.events[dateStr] && appData.events[dateStr].type === 'slots') {
+                delete appData.events[dateStr]; // Limpiar si había algo
+                addLog("Limpieza de Slots Previos", `Slots eliminados para ${dateStr}.`);
+            }
+        }
+    }); // Fin de datesToProcess.forEach
+
+    let logSummary = `Tipo: ${type}, Duración: ${duration}m.`;
+    if (isFormPanelTimeRangeValidAndProvided) {
+        logSummary += ` Horario del panel usado como referencia: ${formPanelStartTime}-${formPanelEndTime}.`;
     }
-    if (datesWithActualProcessing.length > 0) {
-         logDetails += ` Procesado para día(s): ${datesWithActualProcessing.join(', ')}.`;
+    if (processedDatesForLog.length > 0) {
+         logSummary += ` Días con slots generados/actualizados: ${processedDatesForLog.join(', ')}.`;
     } else {
-        logDetails += ` Ningún día fue procesado con nuevos slots.`;
+        logSummary += ` Ningún día fue procesado para generar nuevos slots.`;
     }
-    addLog("Disponibilidad (Slots) Guardada/Actualizada", logDetails);
+    addLog("Operación de Guardar Disponibilidad Completada", logSummary);
 
     if (daysProcessedCount > 0) {
-        if (datesWithActualProcessing.length === 1 && daysProcessedCount === 1) {
-            showNotification(`Día actualizado con ${appData.events[datesWithActualProcessing[0]]?.slots.length || 0} horario(s).`, "success");
-        } else {
-            showNotification(`${daysProcessedCount} día(s) válidos y laborables actualizados. Total ${totalSlotsGeneratedOverall} slots.`, "success");
-        }
-    } else if (skippedNonWorkingOrPastDays.length > 0 && validDatesForSlotGeneration.length === 0) {
-         // Esta notificación ya se muestra antes si validDatesForSlotGeneration está vacío.
+        showNotification(`${daysProcessedCount} día(s) actualizados. Total ${totalSlotsGeneratedOverall} slots generados.`, "success");
     } else {
-        showNotification("No se generaron nuevos horarios. Verifica la configuración y los días seleccionados.", "warning");
+        showNotification("No se generaron nuevos horarios. Verifica la selección y la configuración semanal.", "warning");
     }
     renderCalendar();
     updateSidePanel();
 }
+
+
+
         function markSelectedDaysAsOff(datesToProcess) {
             if (datesToProcess.length === 0) return;
             showConfirm( `Marcar ${datesToProcess.length} día(s) como Libres`, 'Esto eliminará horarios existentes. ¿Continuar?', () => {
