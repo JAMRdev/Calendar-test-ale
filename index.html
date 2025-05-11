@@ -916,78 +916,91 @@
 
 function updateCandidatesPerSlotMax() {
     const interviewTypeEl = document.getElementById('interviewTypePanel');
-    const slotDurationEl = document.getElementById('slotDurationMinutesPanel'); // Este es un input oculto
+    const slotDurationEl = document.getElementById('slotDurationMinutesPanel');
     const candidatesInputEl = document.getElementById('candidatesPerSlotPanel');
 
     if (!interviewTypeEl || !slotDurationEl || !candidatesInputEl) {
-        // console.warn("Faltan elementos para actualizar el máx. de candidatos por slot.");
         return;
     }
 
     const interviewType = interviewTypeEl.value;
-    const slotDuration = parseInt(slotDurationEl.value); // Debería ser 15, 30, o 60
-
+    const slotDuration = parseInt(slotDurationEl.value);
     let maxCandidates;
 
-    // Determinar maxCandidates basado en tipo de entrevista y duración
+    // Determinar maxCandidates (esta lógica parece estar bien)
     switch (interviewType) {
         case 'presencial':
         case 'telefónica':
             if (slotDuration === 15) maxCandidates = 4;
             else if (slotDuration === 30) maxCandidates = 8;
             else if (slotDuration === 60) maxCandidates = 16;
-            else maxCandidates = 1; // Valor por defecto para este tipo si la duración es inesperada
+            else maxCandidates = 1; 
             break;
         case 'virtual':
             if (slotDuration === 15) maxCandidates = 1;
             else if (slotDuration === 30) maxCandidates = 2;
             else if (slotDuration === 60) maxCandidates = 3;
-            else maxCandidates = 1; // Valor por defecto para este tipo si la duración es inesperada
+            else maxCandidates = 1; 
             break;
         case 'masiva':
             if (slotDuration === 15) maxCandidates = 20;
             else if (slotDuration === 30) maxCandidates = 40;
             else if (slotDuration === 60) maxCandidates = 80;
-            else maxCandidates = 1; // Valor por defecto para este tipo si la duración es inesperada
+            else maxCandidates = 1; 
             break;
         default:
-            maxCandidates = 1; // Valor por defecto general si el tipo de entrevista es desconocido
+            maxCandidates = 1; 
     }
 
-    // Actualizar atributos del input
+    // Siempre asegurar que los atributos min y max estén actualizados
+    candidatesInputEl.min = 1; 
     candidatesInputEl.max = maxCandidates;
     candidatesInputEl.placeholder = `Máx: ${maxCandidates}`;
-    candidatesInputEl.min = 1; 
 
-    // Validar y corregir el valor actual del input
+    // Lógica de validación y corrección para el evento 'input'
     const currentValueString = candidatesInputEl.value;
-    
-    if (currentValueString === "") {
-        // Si el campo está vacío (el usuario podría estar borrando para escribir un nuevo número),
-        // no hacemos nada en este evento 'input'. Dejamos que el navegador maneje
-        // la validación de min/max o que el usuario termine de escribir.
-    } else {
-        const currentCandidates = parseInt(currentValueString);
+    const currentValAsNumber = candidatesInputEl.valueAsNumber; // Usa valueAsNumber para una mejor interpretación numérica
 
-        if (isNaN(currentCandidates)) {
-            // Si el valor no está vacío pero no es un número parseable (ej. "1a", "-", "abc")
-            // los navegadores con type="number" a menudo ya habrán limpiado .value a "" o ignorado el carácter.
-            // Si, aun así, llega aquí como no vacío y NaN, lo reseteamos a 1 como medida de seguridad.
-            // Dado min="1", un "-" aislado sería inválido de todas formas.
-            candidatesInputEl.value = 1; 
-        } else if (currentCandidates < 1) {
-            // Si el número es menor que 1, lo ajustamos a 1.
-            candidatesInputEl.value = 1;
-        } else if (currentCandidates > maxCandidates) {
-            // Si el número es mayor que el máximo permitido, lo ajustamos al máximo.
-            candidatesInputEl.value = maxCandidates;
-            showNotification(`Se ajustó el número de candidatos al máximo permitido (${maxCandidates}) para esta configuración.`, "info", 4000);
-        }
-        // Si currentCandidates es un número válido y está dentro del rango [1, maxCandidates],
-        // esta parte del código no lo modifica.
+    if (currentValueString === "") {
+        // Si el usuario borró el contenido, input.value es "" y valueAsNumber es NaN.
+        // No hacemos nada aquí. Se espera que el usuario escriba un nuevo valor.
+        // El atributo min="1" del input debería ser manejado por el navegador
+        // (por ejemplo, al perder el foco o si se intenta enviar un valor inválido).
+        // Esto es crucial para permitir borrar y reescribir en PC.
+        return; 
     }
+
+    if (isNaN(currentValAsNumber)) {
+        // Si value no está vacío pero valueAsNumber es NaN (ej. el usuario escribió "-" o "abc"),
+        // el navegador para type="number" a menudo ya habrá limpiado el .value a "".
+        // Si de alguna manera .value no está vacío aquí pero es NaN (ej. solo un "-"),
+        // como min es "1", un "-" solo es inválido.
+        // En este caso, no lo forzamos a 1 inmediatamente para no interrumpir la escritura,
+        // a menos que sea un texto claramente no numérico que el navegador no limpió.
+        // Si el navegador deja el campo con un texto no numérico (ej "e"), .value no es "" pero es NaN.
+        // Podríamos limpiarlo o dejar que el navegador lo marque inválido.
+        // Por ahora, si no es parseable y no está vacío, podríamos optar por no hacer nada y ver
+        // si el navegador lo gestiona, o limpiarlo nosotros.
+        // Para el caso de PC, ser menos agresivo puede ayudar.
+        // Si `value` es, por ejemplo, "-", `valueAsNumber` es NaN. Dejarlo así momentáneamente.
+        return; 
+    }
+
+    // Si llegamos aquí, currentValAsNumber es un número.
+    // Ahora aplicamos las restricciones de rango.
+    if (currentValAsNumber > maxCandidates) {
+        candidatesInputEl.value = maxCandidates; // Corregir si excede el máximo
+        showNotification(`Se ajustó el número de candidatos al máximo permitido (${maxCandidates}) para esta configuración.`, "info", 4000);
+    } else if (currentValAsNumber < 1) {
+        // Aunque min="1" está puesto, si el valor numérico es menor que 1 (ej. el usuario pegó "0"),
+        // lo corregimos a 1. Los navegadores a veces permiten temporalmente valores fuera de min/max
+        // antes de corregirlos al perder el foco.
+        candidatesInputEl.value = 1; 
+    }
+    // Si el número está dentro del rango [1, maxCandidates], no se modifica.
 }
         
+
         function renderSlotsInPanel(dateStr, container) {
             if (!container) return;
             container.innerHTML = '';
